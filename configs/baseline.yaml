@@ -1,0 +1,6 @@
+# Document the earlier baseline configuration location.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: None; legacy design note
+# Protocol notes: Retained without deletion. Use configs/methods/baseline.yaml plus task/model/optimizer and named experiment settings. Do not maintain duplicate settings here.
+# Unspecified settings must not be interpreted as defaults.

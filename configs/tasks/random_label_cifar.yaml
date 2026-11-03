@@ -1,0 +1,6 @@
+# Define the random label cifar task protocol.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: dataset revision, subset, label seed, tasks, epochs, batch size, optional generalization/noise variant
+# Protocol notes: Main setup: 128 images, 50 tasks, 400 epochs/task, batch 16. Do not reuse blindly for RC-G1.
+# Unspecified settings must not be interpreted as defaults.

@@ -1,0 +1,6 @@
+# Define the permuted mnist task protocol.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: dataset revision, subset, task seed, tasks, epochs, batch size, optional held-out/noise variant
+# Protocol notes: Main setup: 10,000 images, 2,400 tasks, 1 epoch/task, batch 16. Generalization protocol must be checked separately.
+# Unspecified settings must not be interpreted as defaults.

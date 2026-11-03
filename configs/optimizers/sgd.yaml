@@ -1,0 +1,6 @@
+# Define SGD settings.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: learning rate, momentum, other options
+# Protocol notes: Appendix C reports learning rate 0.01 except RM at 0.1. Verify all remaining settings.
+# Unspecified settings must not be interpreted as defaults.

@@ -1,0 +1,6 @@
+# Recreate the Figure 1 plasticity illustration.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: PM/MLP, baseline/SNR, SGD/Adam, illustration seed, diagnostics
+# Protocol notes: Single-seed illustration; inactivity means 1,000 consecutive examples. This is not the SNR reset threshold.
+# Unspecified settings must not be interpreted as defaults.

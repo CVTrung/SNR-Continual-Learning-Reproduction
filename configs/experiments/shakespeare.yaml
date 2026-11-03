@@ -1,0 +1,6 @@
+# Define base language comparisons and attention ablations.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: PS/decoder/Adam, nine Table 2 conditions, seeds, diagnostics
+# Protocol notes: Figures 2-4/Table 2: 500 tasks and nine evaluation seeds. Include SNR+L2 and attention-only L2 variants; SNR alone is insufficient here.
+# Unspecified settings must not be interpreted as defaults.

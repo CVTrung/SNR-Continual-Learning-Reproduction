@@ -1,0 +1,8 @@
+# Dependency plan only: no framework or runtime environment is finalized.
+# Choose Python >=3.9 and one justified framework: torch, tensorflow, or jax.
+# Pin compatible versions after verifying the environment and protocol.
+# Expected roles: numpy/scipy/scikit-learn for scientific operations;
+# wandb for tracking; Hugging Face datasets or Kaggle tools for hosted data;
+# a YAML reader, plotting tools, and a tokenizer for language tasks.
+# Attribute reused standard components and justify additional dependencies.
+# Installing this file now installs no project dependencies.

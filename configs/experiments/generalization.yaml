@@ -1,0 +1,6 @@
+# Define held-out and label-noise analyses.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: PM-G1/PM-G2/RC-G1, models, methods, optimizer, splits, noise schedules, seeds, epochs
+# Protocol notes: Section 3.2.2/Figures 5-6/Table 5. RC-G1 compares 16/100 epochs. Verify optimizer and omitted protocol details.
+# Unspecified settings must not be interpreted as defaults.

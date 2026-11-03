@@ -1,0 +1,6 @@
+# Compare language scales 1 and 16.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: model/corpus scales, L2/SNR+L2, Adam, four seeds, diagnostics
+# Protocol notes: Table 3: 500 tasks, 100 epochs/task, eta 0.05, lambda 1e-4; verify exact corpus/model dimensions at each scale.
+# Unspecified settings must not be interpreted as defaults.

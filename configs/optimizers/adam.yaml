@@ -1,0 +1,6 @@
+# Define Adam settings.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: learning rate, betas, epsilon, other options
+# Protocol notes: Appendix C reports lr 0.001, betas 0.9/0.999, epsilon 1e-7. Language experiments use Adam; verify remaining behavior.
+# Unspecified settings must not be interpreted as defaults.

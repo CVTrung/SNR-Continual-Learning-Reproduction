@@ -1,0 +1,6 @@
+# Define the l2 comparison settings.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: coefficient, parameter mask: eligible weights or attention only
+# Protocol notes: Define penalty convention and composition with SNR.
+# Unspecified settings must not be interpreted as defaults.

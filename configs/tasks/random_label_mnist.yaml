@@ -1,0 +1,6 @@
+# Define the random label mnist task protocol.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: dataset revision, subset, task-label seed, tasks, epochs, batch size
+# Protocol notes: Main setup: 1,200 images, 100 tasks, 400 epochs/task, batch 16.
+# Unspecified settings must not be interpreted as defaults.

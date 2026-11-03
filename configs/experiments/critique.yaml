@@ -1,0 +1,6 @@
+# Reserve controlled experiments testing argued limitations.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: named limitation, hypothesis, factor, controls, metrics, seeds, resource budget
+# Protocol notes: Not selected or validated. Use separate phase tags in the same public W&B project; do not invent findings.
+# Unspecified settings must not be interpreted as defaults.

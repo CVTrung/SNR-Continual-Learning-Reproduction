@@ -1,0 +1,6 @@
+# Define the layer norm comparison settings.
+#
+# Status: documentation only; not a runnable configuration.
+# Settings to specify: placement, affected layers, epsilon, affine settings
+# Protocol notes: Model option, not an optimizer or neuron-reset rule.
+# Unspecified settings must not be interpreted as defaults.
