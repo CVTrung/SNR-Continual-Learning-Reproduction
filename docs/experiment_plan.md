@@ -14,7 +14,9 @@ Match task sequences, architectures, training budgets, and seed roles across com
 
 ## Decisions before implementation
 
-Verify MLP/CNN dimensions, preprocessing, subsets, tokenization/corpus, initialization, practical SNR estimation/window/warm-up, reset connectivity, optimizer-state handling, comparator variants, regularization masks, diagnostics, and sweep interpretation. Choose one supported framework; author use of JAX does not require the team to use it.
+Verify MLP/CNN dimensions, preprocessing, subsets, tokenization/corpus, initialization, practical SNR estimation/window/warm-up, reset connectivity, optimizer-state handling, comparator variants, regularization masks, diagnostics, and sweep interpretation. PyTorch is proposed for team code, with local .venv development and compatible Colab execution; exact versions are unverified. Keep any author JAX environment separate. See setup.md and data_sources.md.
+
+Executable experiment settings and result conventions are deferred at the user's request. No official seed list is selected; 42 may be used for debugging only. Multi-seed evaluation and separate tuning/evaluation roles still apply.
 
 ## Resources
 

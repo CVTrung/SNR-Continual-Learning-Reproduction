@@ -1,9 +1,13 @@
 # File-by-file repository guide
 
-Status: documentation scaffold only. Intended outputs are future responsibilities, not implemented features or completed experiments. Every Python module includes detailed purpose/input/output/responsibility notes; every YAML file explains its settings and protocol.
+Status: documentation scaffold only. Intended outputs are future responsibilities, not implemented features or completed experiments. Team Python modules include purpose/input/output/responsibility notes; YAML files explain deferred settings and protocol. The included reference notebook has been statically inspected and attributed; execution and inherited numerical outputs remain unverified. Ignored raw data files are listed in data_sources.md rather than treated as source files.
 
 | File | Purpose | Expected inputs | Intended outputs |
 | --- | --- | --- | --- |
+| [.env.example](../.env.example) | List blank W&B entity/project/API-key variables. | User-supplied values later, kept outside Git. | A secret-free template; no account/project/authentication configured. |
+| [docs/setup.md](../docs/setup.md) | Plan PyTorch local .venv and compatible Colab execution. | Actual hardware and future verified dependency choices. | Validated setup later; no install/run commands claimed operational. |
+| [docs/data_sources.md](../docs/data_sources.md) | Record proposed dataset sources and observed local files. | Read-only paths/sizes; future provenance and schema checks. | Source/revision/split/preprocessing record, with unknowns labelled. |
+| [notebooks/SNR_Permuted_MNIST.ipynb](../notebooks/SNR_Permuted_MNIST.ipynb) | Attributed user-supplied reference harness invoking author JAX code. | Author repository and reference settings; exact revision/origin unverified. | Inherited outputs retained as unverified reference material, not team results; original cells preserved. |
 | [.gitignore](../.gitignore) | Exclude environments, secrets, downloaded data, checkpoints, and bulky logs. | Git ignore patterns. | Source-only tracking with local artifacts excluded. |
 | [Agent.md](../Agent.md) | Requested entry point linking to the canonical agent guide. | AGENTS.md and project documentation. | Navigation without duplicated instructions. |
 | [AGENTS.md](../AGENTS.md) | Canonical comprehensive instructions for agents and contributors. | User instructions and paper/course requirements. | Scope, integrity, architecture, reproducibility, and change boundaries. |
@@ -49,7 +53,7 @@ Status: documentation scaffold only. Intended outputs are future responsibilitie
 | [notebooks/author_comparison.ipynb](../notebooks/author_comparison.ipynb) | Verify outputs against the independent authors' implementation. | Selected environment, config, and data references. | A traceable execution later; markdown only today. |
 | [notebooks/colab.ipynb](../notebooks/colab.ipynb) | Hosted entry point for the team implementation. | Selected environment, config, and data references. | A traceable execution later; markdown only today. |
 | [README.md](../README.md) | Public overview, project status, navigation, and experiment-to-run evidence. | Verified decisions and future completed run records. | Setup/run guidance and public result mapping once verified. |
-| [requirements.txt](../requirements.txt) | Document dependency roles until framework/version choices are verified. | Future environment decisions. | A pinned dependency list later; no dependencies installed now. |
+| [requirements.txt](../requirements.txt) | Document anticipated PyTorch dependencies until compatible versions are verified. | Proposed local/Colab environment and future compatibility checks. | A pinned dependency list later; no dependencies installed now. |
 | [results/figures/.gitkeep](../results/figures/.gitkeep) | Retain the original directory marker; no runtime role. | None. | None; no deletion performed. |
 | [results/figures/README.md](../results/figures/README.md) | Document the intended figures artifacts. | Future completed run exports and provenance. | Small verified artifacts; no results yet. |
 | [results/metrics/.gitkeep](../results/metrics/.gitkeep) | Retain the original directory marker; no runtime role. | None. | None; no deletion performed. |
@@ -90,7 +94,7 @@ Status: documentation scaffold only. Intended outputs are future responsibilitie
 
 ## Responsibility boundaries
 
-Data loaders prepare original data. Tasks create sequential problems. Models define computation and expose necessary activity/parameter groups. Methods decide interventions; architecture-specific reset functions apply parameter/state changes. Training coordinates these components. Evaluation and diagnostics define measurements; tracking and checkpoints preserve evidence and reproducibility. Prefer functions over speculative class hierarchies.
+Raw data lives in ignored root data/ or a configured external cache; src/data/ contains loaders only. Dataset origin and loadability remain unverified. Data loaders prepare original data. Tasks create sequential problems. Models define computation and expose necessary activity/parameter groups. Methods decide interventions; architecture-specific reset functions apply parameter/state changes. Training coordinates these components. Evaluation and diagnostics define measurements; tracking and checkpoints preserve evidence and reproducibility. Prefer functions over speculative class hierarchies.
 
 ## Legacy paths
 

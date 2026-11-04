@@ -4,11 +4,11 @@
 
 This is a student reproduction of Self-Normalized Resets for Plasticity in Continual Learning (ICLR 2025). The target is the full experimental scope in docs/experiment_coverage.md plus course-required critique and empirical demonstrations.
 
-Current work is structure and documentation only. Do not implement algorithms, run training, install dependencies, create remote resources, or publish results unless the user subsequently requests that work. Later explicit user instructions take precedence. Module/config notes describe intended work, not functioning features. No verified results, framework, hardware budget, hosted dataset choices, or W&B project exist yet.
+Current work is structure and documentation only. Do not implement algorithms, run training, install dependencies, create remote resources, or publish results unless the user subsequently requests that work. Later explicit user instructions take precedence. Module/config notes describe intended work, not functioning features. PyTorch is proposed for team code, but Python/PyTorch/CUDA compatibility, hardware budget, dataset provenance, and public W&B configuration remain unverified. Four local dataset folders and a user-added code notebook now exist; do not infer successful loading or execution.
 
 ## Read first
 
-Read README.md, docs/assignment_requirements.md, docs/repository_guide.md, docs/experiment_coverage.md, docs/experiment_plan.md, and relevant per-file notes. Record verified decisions and uncertainties in docs/reproduction_notes.md. Prefer current owning sources over past suggestions.
+Read README.md, docs/setup.md, docs/data_sources.md, docs/assignment_requirements.md, docs/repository_guide.md, docs/experiment_coverage.md, docs/experiment_plan.md, and relevant per-file notes. Record verified decisions and uncertainties in docs/reproduction_notes.md. Prefer current owning sources over past suggestions.
 
 Sources:
 - Paper: https://proceedings.iclr.cc/paper_files/paper/2025/file/359c0c4dc53b6bf64041b4c8334f1c11-Paper-Conference.pdf
@@ -30,9 +30,17 @@ The course asks for at least three strengths, two theoretical limitations, and t
 
 Reimplement the core method from the paper description. Author code may be read/run for verification and comparison, but never copy method code into team source or present it as team work. Do not vendor the author repository. Standard blocks, loaders, metrics, and tools may be reused with attribution.
 
-Keep src/data/ for original datasets, src/tasks/ for task construction, src/models/ for architectures, and src/methods/ for interventions. Models do not download data or generate tasks. Prefer simple train/evaluate functions; avoid speculative base classes, registries, or infrastructure. Put parameter/seed variants in configs. Compose SNR and regularization without duplicating training loops. Layer Normalization is a model option.
+Keep raw datasets in ignored root data/ or an explicitly configured external cache; src/data/ contains loaders only. Do not move, delete, overwrite, or re-download existing datasets without explicit authorization. Keep src/tasks/ for task construction, src/models/ for architectures, and src/methods/ for interventions. Models do not download data or generate tasks. Prefer simple train/evaluate functions; avoid speculative base classes, registries, or infrastructure. Put parameter/seed variants in configs. Compose SNR and regularization without duplicating training loops. Layer Normalization is a model option.
 
 Handle MLP neurons, CNN channels, and Transformer FFN units explicitly. Verify activity reduction axes, reset connectivity, biases, optimizer state, and method-statistic resets. Do not reset attention matrices as MLP neurons. Distinguish diagnostic inactivity from reset criteria. Keep notebooks thin. Important functions need docstrings stating purpose, parameters, and returns.
+
+## Environment and deferred work
+
+Use proposed PyTorch team code, local .venv for development/debugging, and compatible Colab GPU execution for longer runs. Do not invent version pins or claim commands worked without testing them. The current update does not authorize environment creation, dependency installation, training, reference cloning, W&B login/project creation, or remote publication. Keep reference code outside the team repo, proposed at D:/School/ML/references/SelfNormalizedResets, in its own environment.
+
+Executable experiment configurations and result conventions are deferred. Seed 42 is optional for debugging, not a prescribed evaluation seed. Keep multiple seeds and tuning/evaluation separation for later formal comparisons. The included notebooks/SNR_Permuted_MNIST.ipynb is an attributed user-supplied harness invoking author JAX code, with unverified inherited outputs. Its original cells/outputs are preserved; exact export origin/reference revision and numerical results are not validated. Do not present it as team implementation/results or execute its relative clone inside the team repository. Do not fabricate team members or assignments.
+
+.env.example may contain only blank W&B variable values and explanatory comments. Real credentials stay in ignored .env or runtime secrets. W&B account, public project, and authentication are not assumed to exist. A .env file requires an explicitly chosen loading mechanism.
 
 ## Reproducibility
 

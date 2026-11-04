@@ -1,8 +1,16 @@
-# Dependency plan only: no framework or runtime environment is finalized.
-# Choose Python >=3.9 and one justified framework: torch, tensorflow, or jax.
-# Pin compatible versions after verifying the environment and protocol.
-# Expected roles: numpy/scipy/scikit-learn for scientific operations;
-# wandb for tracking; Hugging Face datasets or Kaggle tools for hosted data;
-# a YAML reader, plotting tools, and a tokenizer for language tasks.
-# Attribute reused standard components and justify additional dependencies.
-# Installing this file now installs no project dependencies.
+# Proposed team framework: PyTorch; environment has not been validated.
+# No installable requirements or version pins yet; this file installs nothing.
+# Resolve Python/PyTorch/CUDA compatibility locally and on Colab before pinning.
+# Anticipated dependencies (roles only; add verified versions later):
+# torch: team models, gradients, and optimization.
+# torchvision: standard image utilities if actually needed; document reuse.
+# numpy: array operations and reproducible transformations.
+# scipy / scikit-learn: scientific helpers or metrics only when required.
+# datasets / huggingface_hub: hosted dataset retrieval and revision metadata.
+# pyarrow: Parquet access if required by the chosen loading pipeline.
+# wandb: one public project for experiment evidence.
+# PyYAML: configuration parsing when executable configs are authorized.
+# matplotlib: original result and diagnostic figures.
+# tiktoken or another verified compatible tokenizer: language tasks; choice open.
+# Keep JAX/reference-code dependencies in a separate external environment.
+# Do not assume the authors' requirements are the team's environment.

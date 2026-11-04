@@ -20,8 +20,8 @@ The initial repository contains a documented scaffold only. It establishes the p
 | Rebuild the method from the paper description | src/methods/; docs/reproduction_notes.md | Design notes only; no copied author implementation |
 | Original datasets, task generation, and models have clear boundaries | src/data/, src/tasks/, src/models/ | Responsibilities documented |
 | Full reproduction scope | docs/experiment_coverage.md; configs/experiments/ | Full-scope target mapped; no experiments completed |
-| Programmatic Hugging Face/Kaggle dataset preparation | src/data/; scripts/prepare_data.py | Sources and revisions still to resolve |
-| Reproducible configurations, seeds, and environment | configs/; requirements.txt; src/tracking.py; src/checkpoint.py | Protocol/environment not finalized |
+| Programmatic Hugging Face/Kaggle dataset preparation | src/data/; scripts/prepare_data.py | Local files present; sources/revisions/loading still to verify |
+| Reproducible configurations, seeds, and environment | configs/; requirements.txt; src/tracking.py; src/checkpoint.py | PyTorch/local-Colab proposed; versions/configs still deferred |
 | Every run tracked in one public W&B project | src/tracking.py; README experiment-to-evidence table | No verified project or runs recorded |
 | Compare against paper numbers and explain deviations | scripts/summarize_results.py; results/; docs/reproduction_notes.md | No measured numbers yet |
 | Run author code independently for verification and localize differences | notebooks/author_comparison.ipynb; docs/author_comparison.md | Not executed; method copying prohibited |
