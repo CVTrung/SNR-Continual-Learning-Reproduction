@@ -24,3 +24,5 @@ Thumbs.db
 
 # Local experiment tracking cache
 /wandb/
+
+results/logs/
