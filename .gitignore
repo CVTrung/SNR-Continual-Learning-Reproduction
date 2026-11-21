@@ -34,3 +34,4 @@ results/logs/
 /checkpoints/
 # Paper PDF kept locally only (not redistributed)
 docs/*Paper-Conference.pdf
+.smoke/
