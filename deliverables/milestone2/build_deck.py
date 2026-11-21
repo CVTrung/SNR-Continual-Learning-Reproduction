@@ -1683,7 +1683,7 @@ How to read the outcome. A flat curve confirms the paper's robustness claim for 
         detail_txt = " ".join(detail)
         order_team = sorted(have, key=lambda m: -val(opt, m))
         d.finish(s, refs=[1, 8], notes=f"""
-This is the headline comparison for {OPT_LABEL[opt]}: last-10% online accuracy on Permuted MNIST after 2400 tasks, our runs next to the paper's Table 6.
+This is the headline comparison for {OPT_LABEL[opt]}: last-10% online accuracy on Permuted MNIST, our runs ({snr_tasks or 600} tasks, reduced protocol) next to the paper's Table 6 (2400 tasks).
 
 What we have. {len(have)} of the 8 conditions have runs: {', '.join(LABEL[m] for m in have) or 'none'}. {('Still pending: ' + ', '.join(LABEL[m] for m in METHODS if m not in have) + '. Their cells say "pending" and their bars are missing; no number is shown until a run exists.') if len(have) < 8 else 'All conditions are measured.'}
 
@@ -2338,9 +2338,43 @@ What it does not settle, and what we know now. At eta = 0.01 the pilot also coll
     return d
 
 
+def fix_notes_pages(prs):
+    """Make speaker notes render in every editor (OnlyOffice, LibreOffice, PowerPoint).
+
+    The draft 7.pptx declares a notes page of 5,143,500 x 9,144,000 EMU (the slide height used
+    as the width), while its notes master lays its boxes out for the standard 6,858,000 width,
+    so slide image and notes text ran off the page and OnlyOffice showed no notes. We set the
+    standard portrait notes size and give each notes slide's image and body placeholders
+    explicit geometry instead of relying on inheritance from the master.
+    """
+    from pptx.util import Emu
+    ns = {"p": "http://schemas.openxmlformats.org/presentationml/2006/main"}
+    sz = prs.element.find("p:notesSz", ns)
+    if sz is not None:
+        sz.set("cx", "6858000")
+        sz.set("cy", "9144000")
+    geometry = {"sldImg": (685800, 1143000, 5486400, 3086100),
+                "body": (685800, 4400550, 5486400, 3600450)}
+    for slide in prs.slides:
+        if not slide.has_notes_slide:
+            continue
+        for ph in slide.notes_slide.placeholders:
+            kind = ph.placeholder_format.type
+            key = "sldImg" if "SLIDE_IMAGE" in str(kind) else ("body" if "BODY" in str(kind) else None)
+            if key:
+                x, y, w, h = geometry[key]
+                ph.left, ph.top, ph.width, ph.height = Emu(x), Emu(y), Emu(w), Emu(h)
+            if key == "body":   # 11 pt so a 300-400 word note fits the printed notes page
+                from pptx.util import Pt
+                for para in ph.text_frame.paragraphs:
+                    for run in para.runs:
+                        run.font.size = Pt(11)
+
+
 def main():
     d = build()
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    fix_notes_pages(d.prs)
     d.prs.save(str(OUT))
     n = len(d.prs.slides)
     size = OUT.stat().st_size / 1e6
