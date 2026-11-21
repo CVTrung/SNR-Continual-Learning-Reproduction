@@ -1,11 +1,11 @@
 # Experiment B: Permuted Shakespeare (Table 2, Figures 2-4), 1-layer decoder Transformer, Adam lr 1e-3.
 # Run: python -m scripts.sweep configs/experiments/shakespeare.yaml --workers 6
-# Reduced protocol (local CPU): 30 tasks x 50 epochs, 2 seeds (paper: 500 tasks x 100 epochs, 9 seeds).
+# Reduced protocol (local CPU): 30 tasks x 50 epochs, 1 seed (paper: 500 tasks x 100 epochs, 9 seeds).
 # Hyperparameters: best values of the paper's Table 9 sweep (L2 1e-4, L2 Init 1e-5, SNR eta 0.03,
 # SNR+L2 eta 0.001 with lambda 1e-4); L2* uses the L2 strength. CBP and ReDO have no PS grid in
 # the paper and are not run. Full protocol: tasks: 500, epochs: 100 (Colab notebook).
 common: {benchmark: ps, tasks: 30, epochs: 50, phase: eval}
-seeds: [100, 101]
+seeds: [100]     # local CPU: one seed (about 3 h per run); seed 101+ on Colab
 runs:
   - {reset: none}
   - {penalty: l2, lam: 0.0001}

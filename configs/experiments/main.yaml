@@ -1,11 +1,11 @@
 # Experiment A (headline): Table 1, Permuted MNIST column, MLP, SGD and Adam, 8 conditions.
 # Run: python -m scripts.sweep configs/experiments/main.yaml --workers 12
-# Reduced protocol (local CPU): 600 of the paper's 2400 tasks, 3 evaluation seeds (paper: 5).
+# Reduced protocol (local CPU): 600 of the paper's 2400 tasks, 2 evaluation seeds (paper: 5); a few conditions also have seed 102.
 # Hyperparameters are the best values reported in the paper's Appendix C sensitivity tables
 # (Tables 10/11, Figure 7); no team tuning sweep was run, so seeds 100-102 are all evaluation seeds.
 # Full protocol: set tasks: 2400 and seeds: [100, 101, 102, 103, 104] (Colab notebook).
 common: {benchmark: pm, tasks: 600, phase: eval}
-seeds: [100, 101, 102]
+seeds: [100, 101]   # local CPU (RAM-limited); 5 seeds on Colab
 runs:
   - {optimizer: sgd, reset: none}
   - {optimizer: sgd, reset: snr, eta: 0.005}
