@@ -26,3 +26,9 @@ Thumbs.db
 /wandb/
 
 results/logs/
+# Datasets live next to their loaders (user decision 2026-11-21): src/data/<name>/ folders
+# are ignored, loader modules src/data/*.py stay tracked.
+/src/data/*/
+.pytest_tmp/
+.superpowers/
+/checkpoints/
