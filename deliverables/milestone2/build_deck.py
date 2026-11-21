@@ -118,7 +118,8 @@ REFS = {
     6: '"ylecun/mnist," Hugging Face Datasets. [Online]. Available: '
        'https://huggingface.co/datasets/ylecun/mnist',
     7: 'D. P. Kingma and J. Ba, "Adam: A method for stochastic optimization," in Proc. ICLR, 2015.',
-    8: 'Group 7, "snr-reproduction: Trackio dashboard," Hugging Face Space. [Online]. Available: '
+    8: 'Group 7, "snr-reproduction," W&B project. [Online]. Available: https://wandb.ai/'
+       'vutrung2903-tr-ng-i-h-c-khoa-h-c-t-nhi-n-hqg-hcm/snr-reproduction ; Trackio dashboard: '
        'https://huggingface.co/spaces/nshai/snr-reproduction',
     9: 'J. Ash and R. P. Adams, "On warm-starting neural network training," in Proc. NeurIPS, '
        'vol. 33, pp. 3884-3894, 2020.',
