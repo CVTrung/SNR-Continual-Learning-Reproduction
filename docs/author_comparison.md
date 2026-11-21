@@ -1,30 +1,20 @@
 # Author-code comparison
 
-Purpose: plan independent reference verification without copying the paper's implementation. Inputs: the authors' repository/version, isolated environment, and later agreed comparison inputs. Intended outputs: documented output differences and localized causes. Status: no clone, author environment, or reference execution has been verified in this update.
+Reference: https://github.com/ajozefiak/SelfNormalizedResets, commit `8b84f0c295cf23269fdbfe20e5d03186638c318f` (2025-08-06). It was cloned outside the team repository to `D:/School/ML/references/SelfNormalizedResets`, read only, and never executed or copied. The team code is a PyTorch reimplementation from the paper.
 
-## Reference and location
+## What was compared (static reading, 2026-11-21)
 
-Repository: https://github.com/ajozefiak/SelfNormalizedResets
+| Item | Author code | Team code | Effect |
+| --- | --- | --- | --- |
+| PM MLP | 2 x Dense(100), ReLU, Flax default init | was 3 x 100 with PyTorch default init; now 2 x 100 with LeCun-normal init and zero bias | first-version runs moved to `results/metrics/preliminary_v1/` |
+| SNR firing unit | per mini-batch (any example active) | was per example; now per step | fixed the over-reset and the collapse at large eta |
+| SNR threshold | per-unit (1 - eta) percentile of a histogram of silent runs (age-0 excluded), refreshed every 16 tasks, x2 expansion, floor of one batch, start at 20,000 examples | geometric (mean of silent runs, EMA) or histogram (1-task window), no expansion rule | different estimator details; experiment C measures how much that matters |
+| SNR eta in the provided notebook | `threshold_percentile = 0.92`, i.e. eta = 0.08 | eta from the paper's grid | consistent with the paper's best Adam value |
+| PS corpus | first N tokens of `all_shakespeare.txt` (All's Well That Ends Well) | The Tempest, as the paper states | our text follows the paper and differs from the public template |
+| PS permutation | whitespace-word permutation, then BPE | permutation of restricted-vocabulary token ids | ours matches the paper's wording ("permutation of the vocabulary") |
+| PS context | windows of 129 tokens (128 + 1) | same | identical |
+| Shakespeare file | `src/data/all_shakespeare.txt` | byte-identical after CRLF->LF | same data |
 
-Proposed location outside the team repository: D:/School/ML/references/SelfNormalizedResets. This is a proposed path, not confirmation that a clone exists. Do not vendor the author repository inside the team project. The exact reference commit must be inspected and recorded later; none is claimed here.
+## Not compared
 
-The team proposes PyTorch. Reference code may use JAX and its own dependencies; keep its environment separate. Do not assume either environment has been created or the authors' released code covers every published experiment.
-
-## Later verification workflow
-
-1. With authorization to run reference work, inspect the chosen author revision and available entry points; record actual commit, license, dependencies, and dataset requirements.
-2. Prepare its separate environment and record successful commands only after testing them. Never copy author method code into src/ or submit it as team work.
-3. Once a comparison protocol is agreed, align inputs, preprocessing, model settings, and seed roles; record unavoidable differences. Experiment configs and formal seed lists remain deferred.
-4. Run reference and team pipelines separately. Record output artifacts, actual environment/hardware, command/config, and completed run links where applicable. No outputs or W&B links exist from this update.
-5. Localize the first divergence: data/task sequence, initialization, forward results, activity statistics, reset decisions, optimizer behavior, or metric aggregation. Distinguish paper-versus-code discrepancies from bugs in the team implementation.
-
-## Evidence record to fill
-
-| Reference commit | Reference environment/command | Team commit/environment/command | Compared inputs | Outputs/run links | First divergence and explanation |
-| --- | --- | --- | --- | --- | --- |
-
-Standard blocks may be reused with documented attribution under the course rules; the core method must be implemented from the paper description. The reference notebook documents verification, not a second team training implementation.
-
-## Included reference notebook
-
-[notebooks/SNR_Permuted_MNIST.ipynb](../notebooks/SNR_Permuted_MNIST.ipynb) is a supplied harness calling the author JAX package. Static inspection found clone/install cells, reference parameters, and stored output logs. A provenance cell distinguishes it from the team PyTorch implementation. Original code cells and outputs are retained; no cells were run here and saved values are not verified team results. Exact export origin and author commit remain unknown. Run it only in an isolated reference workspace; its MNIST download path is not the team's required hosted-data pipeline.
+No author run was executed: the authors' JAX environment was not built, so no numerical outputs were compared side by side. The provided notebook `notebooks/SNR_Permuted_MNIST.ipynb` keeps its inherited outputs, which are unverified and are not team results. The author repository has no PS model code, and its template leaves the model step empty.

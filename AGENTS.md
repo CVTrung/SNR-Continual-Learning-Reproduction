@@ -2,9 +2,9 @@
 
 ## Purpose and authorization
 
-This is a student reproduction of Self-Normalized Resets for Plasticity in Continual Learning (ICLR 2025). The target is the full experimental scope in docs/experiment_coverage.md plus course-required critique and empirical demonstrations.
+This is a student reproduction of Self-Normalized Resets for Plasticity in Continual Learning (ICLR 2025). The target is the **core scope** in docs/experiment_coverage.md (user decision, 2026-11-21): A = Permuted MNIST Table 1, B = Permuted Shakespeare Table 2 / Figures 2-4, C = team eta-sensitivity analysis. It also covers the course-required critique and empirical demonstrations.
 
-Current work is structure and documentation only. Do not implement algorithms, run training, install dependencies, create remote resources, or publish results unless the user subsequently requests that work. Later explicit user instructions take precedence. Module/config notes describe intended work, not functioning features. PyTorch is proposed for team code, but Python/PyTorch/CUDA compatibility, hardware budget, dataset provenance, and public W&B configuration remain unverified. Four local dataset folders and a user-added code notebook now exist; do not infer successful loading or execution.
+The user has authorized implementation, the local .venv, dependency installation and reduced-protocol training for core scope (2026-11-21). Still ask before creating remote resources (W&B/Trackio projects, HF Spaces), publishing, pushing, or deleting datasets. Later explicit user instructions take precedence. The verified environment and data provenance are in docs/setup.md and docs/data_sources.md; the public W&B project is not yet created.
 
 ## Read first
 
@@ -20,7 +20,7 @@ Sources:
 
 ## Scientific scope
 
-Cover PM/RM with an MLP, RC/CI with a CNN, and PS with a decoder Transformer. Include attention ablations, scale studies, generalization, and hyperparameter sensitivity. Track supplementary scale-256 explicitly. Verify protocols and metric timing before claiming fidelity.
+Core scope: PM with an MLP (8 conditions, SGD/Adam), PS with a decoder Transformer (Table 2 conditions, including the attention-only L2 ablation), and the SNR eta sensitivity analysis. RM, RC, CI, scaling, generalization and scale-256 are out of scope. Verify protocols and metric timing before claiming fidelity.
 
 Distinguish new-task plasticity, old-task forgetting, and held-out generalization. Preserve the language regularization combinations: SNR alone is insufficient there. The theoretical oracle-reset result is not a general practical-SNR guarantee.
 
@@ -30,15 +30,15 @@ The course asks for at least three strengths, two theoretical limitations, and t
 
 Reimplement the core method from the paper description. Author code may be read/run for verification and comparison, but never copy method code into team source or present it as team work. Do not vendor the author repository. Standard blocks, loaders, metrics, and tools may be reused with attribution.
 
-Keep raw datasets in ignored root data/ or an explicitly configured external cache; src/data/ contains loaders only. Do not move, delete, overwrite, or re-download existing datasets without explicit authorization. Keep src/tasks/ for task construction, src/models/ for architectures, and src/methods/ for interventions. Models do not download data or generate tasks. Prefer simple train/evaluate functions; avoid speculative base classes, registries, or infrastructure. Put parameter/seed variants in configs. Compose SNR and regularization without duplicating training loops. Layer Normalization is a model option.
+Raw datasets live in the ignored src/data/<name>/ folders (the user moved them there); only the loader modules src/data/*.py are tracked. Do not move, delete, overwrite, or re-download existing datasets without explicit authorization. Keep src/tasks/ for task construction, src/models/ for architectures, and src/methods/ for interventions. Models do not download data or generate tasks. Prefer simple train/evaluate functions; avoid speculative base classes, registries, or infrastructure. Put parameter/seed variants in configs. Compose SNR and regularization without duplicating training loops. Layer Normalization is a model option.
 
 Handle MLP neurons, CNN channels, and Transformer FFN units explicitly. Verify activity reduction axes, reset connectivity, biases, optimizer state, and method-statistic resets. Do not reset attention matrices as MLP neurons. Distinguish diagnostic inactivity from reset criteria. Keep notebooks thin. Important functions need docstrings stating purpose, parameters, and returns.
 
 ## Environment and deferred work
 
-Use proposed PyTorch team code, local .venv for development/debugging, and compatible Colab GPU execution for longer runs. Do not invent version pins or claim commands worked without testing them. The current update does not authorize environment creation, dependency installation, training, reference cloning, W&B login/project creation, or remote publication. Keep reference code outside the team repo, proposed at D:/School/ML/references/SelfNormalizedResets, in its own environment.
+Use the PyTorch team code, the local .venv (Python 3.12, pins in requirements.txt) for development and reduced runs, and notebooks/colab.ipynb on a Colab GPU for full-protocol runs. Do not invent version pins or claim commands worked without testing them. W&B/Trackio login or project creation and remote publication still need the user. Reference code stays outside the team repo at D:/School/ML/references/SelfNormalizedResets (read for verification only).
 
-Executable experiment configurations and result conventions are deferred. Seed 42 is optional for debugging, not a prescribed evaluation seed. Keep multiple seeds and tuning/evaluation separation for later formal comparisons. The included notebooks/SNR_Permuted_MNIST.ipynb is an attributed user-supplied harness invoking author JAX code, with unverified inherited outputs. Its original cells/outputs are preserved; exact export origin/reference revision and numerical results are not validated. Do not present it as team implementation/results or execute its relative clone inside the team repository. Do not fabricate team members or assignments.
+Executable experiment matrices are configs/experiments/{main,shakespeare,sensitivity}.yaml, run with scripts/sweep.py. Evaluation seeds are 100-104; seeds 0-2 were used by exploratory runs. Hyperparameters come from the paper's reported best values (no team tuning), as documented in docs/experiment_plan.md. The included notebooks/SNR_Permuted_MNIST.ipynb is an attributed user-supplied harness invoking author JAX code, with unverified inherited outputs. Its original cells/outputs are preserved; exact export origin/reference revision and numerical results are not validated. Do not present it as team implementation/results or execute its relative clone inside the team repository. Do not fabricate team members or assignments.
 
 .env.example may contain only blank W&B variable values and explanatory comments. Real credentials stay in ignored .env or runtime secrets. W&B account, public project, and authentication are not assumed to exist. A .env file requires an explicitly chosen loading mechanism.
 

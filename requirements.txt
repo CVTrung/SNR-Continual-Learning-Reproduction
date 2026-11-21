@@ -1,16 +1,20 @@
-# Proposed team framework: PyTorch; environment has not been validated.
-# No installable requirements or version pins yet; this file installs nothing.
-# Resolve Python/PyTorch/CUDA compatibility locally and on Colab before pinning.
-# Anticipated dependencies (roles only; add verified versions later):
-# torch: team models, gradients, and optimization.
-# torchvision: standard image utilities if actually needed; document reuse.
-# numpy: array operations and reproducible transformations.
-# scipy / scikit-learn: scientific helpers or metrics only when required.
-# datasets / huggingface_hub: hosted dataset retrieval and revision metadata.
-# pyarrow: Parquet access if required by the chosen loading pipeline.
-# wandb: one public project for experiment evidence.
-# PyYAML: configuration parsing when executable configs are authorized.
-# matplotlib: original result and diagnostic figures.
-# tiktoken or another verified compatible tokenizer: language tasks; choice open.
-# Keep JAX/reference-code dependencies in a separate external environment.
-# Do not assume the authors' requirements are the team's environment.
+# Team environment. These are the versions the test suite and the reduced-protocol runs used:
+# Windows 11, Python 3.12, CPU only (recorded 2026-11-21).
+# Install:  uv venv .venv --python 3.12
+#           uv pip install --python .venv/Scripts/python.exe torch --index-url https://download.pytorch.org/whl/cpu
+#           uv pip install --python .venv/Scripts/python.exe -r requirements.txt
+# On Colab, keep the preinstalled torch/numpy/pandas/matplotlib (CUDA build). notebooks/colab.ipynb
+# installs only the missing packages.
+torch==2.15.0          # CPU wheel locally; any CUDA build >= 2.4 on Colab
+numpy==2.5.5
+pandas==3.1.1
+pyarrow==26.0.1        # Parquet MNIST
+pillow==13.0.0         # PNG decoding of MNIST images
+tiktoken==0.14.0       # GPT-2 BPE for Permuted Shakespeare
+huggingface_hub==2.4.0 # programmatic MNIST download (scripts/prepare_data.py)
+pyyaml==6.0.4          # experiment configs
+matplotlib==3.11.2     # team figures
+tabulate==0.10.0       # Markdown tables in scripts/summarize_results.py
+pytest==9.2.0
+wandb==0.31.2          # optional tracking backend (--tracking wandb)
+# optional: trackio (--tracking trackio), python-pptx==1.0.2 (deliverables/milestone2/build_deck.py)

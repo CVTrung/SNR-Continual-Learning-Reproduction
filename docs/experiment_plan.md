@@ -1,29 +1,30 @@
-# Experiment plan
-
-Status: full-scope target; documentation scaffold only. No experimental implementation or runs. Feasibility is unmeasured.
+# Experiment plan (core scope)
 
 ## Goal
 
-Cover all main published experiments: four vision benchmarks, the language benchmark/attention ablations, diagnostics, scale studies, generalization, and sensitivity. Track supplementary scale-256 explicitly. See experiment_coverage.md for artifact-level mapping.
-
-Development can proceed part by part (PM/MLP, remaining vision/CNN, language/Transformer, extended analyses) without redefining the full-scope target. Smoke runs establish functionality, not complete reproduction.
+Reproduce the headline Permuted MNIST comparison (A) and the Permuted Shakespeare result (B), and test the paper's claim that SNR is robust to eta (C). See experiment_coverage.md.
 
 ## Fair comparisons
 
-Match task sequences, architectures, training budgets, and seed roles across comparable methods. Separate tuning from fresh evaluation seeds. Explicitly define optimizer options, intervention order, metric timing, selection criterion, and aggregation. Retain raw per-task/per-seed records and summarize only compatible completed runs.
+- Matched within each benchmark: same task sequence, same seed meaning, same architecture, optimizer settings and number of steps. The interventions differ only in the reset rule, the penalty, or the LayerNorm flag, all through one training loop (`src/train.py`).
+- One seed sets the 10k subset, every task permutation, the initialization and the batch order. This follows the paper's definition of a seed.
+- Hyperparameters: there is no budget for the paper's tuning sweeps, so each method uses the best value the paper reports (Appendix C, Tables 9-11). No team tuning took place, so every seed (100-102 for PM, 100-101 for PS) is a fresh evaluation seed. Seeds 0-2 were used by earlier exploratory runs and are not reused.
+- Metrics: PM uses mean online accuracy over the last 10% of tasks, where online accuracy is the prediction made before each update, over the task's single epoch. PS uses the loss on the final epoch of each task, averaged over all tasks, the first 10% and the last 10% of tasks (the paper's first/last 50 of 500).
 
-## Decisions before implementation
+## Protocols
 
-Verify MLP/CNN dimensions, preprocessing, subsets, tokenization/corpus, initialization, practical SNR estimation/window/warm-up, reset connectivity, optimizer-state handling, comparator variants, regularization masks, diagnostics, and sweep interpretation. PyTorch is proposed for team code, with local .venv development and compatible Colab execution; exact versions are unverified. Keep any author JAX environment separate. See setup.md and data_sources.md.
+| | Paper | Reduced (local CPU, done) | Full (Colab notebook) |
+| --- | --- | --- | --- |
+| PM tasks / seeds | 2400 / 5 | 600 / 3 | 2400 / 5 |
+| PM eta sweep | 2400 / 5 | 600 / 1 (seed 100) | 2400 / 1+ |
+| PS tasks x epochs / seeds | 500 x 100 / 9 | 50 x 50 / 2 | 500 x 100 / 2+ |
 
-Executable experiment settings and result conventions are deferred at the user's request. No official seed list is selected; 42 may be used for debugging only. Multi-seed evaluation and separate tuning/evaluation roles still apply.
+## Measured resources (Windows 11, 16 logical CPU cores, no GPU)
 
-## Resources
-
-Measure wall time, memory, logging overhead, and checkpoint/resume behavior on actual hardware before estimating full runs. No end-to-end compute budget is established. Never launch the full matrix implicitly. Large Transformer sweeps and scale-256 remain unmeasured commitments.
+- PM: 1.2 s per task for a single-threaded process running alone, and about 2.5-4 s per task with 10-16 processes running at once. A 600-task run takes 25-40 minutes.
+- PS: 1.2-1.6 s per epoch single-threaded, so the paper protocol (50,000 epochs) would take about 18-22 hours per run on CPU.
+- Single-threaded processes (`OMP_NUM_THREADS=1`) give the best throughput on CPU, and `scripts/sweep.py` sets that.
 
 ## Evidence
 
-Prepare verified Hugging Face/Kaggle datasets programmatically. Record full config, seeds, commit, environment/hardware, dataset revision, and metric timing with public W&B links. Compare against published numbers and run independent author-code verification without copying core code.
-
-Old-task retention is a separate forgetting analysis, not a substitute for plasticity. Poster critique experiments need separate hypotheses and phase tags.
+Each run writes `results/metrics/<run>.csv` (per task) and `<run>.json` (resolved config, commit, Python/torch versions, host, seconds per task, summary). `scripts/summarize_results.py` writes the tables and `scripts/plot_results.py` the figures. Remote tracking (`--tracking trackio|wandb`) is optional and adds a dashboard link. Never fabricate runs.

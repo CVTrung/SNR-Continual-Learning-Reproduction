@@ -1,5 +1,3 @@
 # Tables
 
-Purpose: Store generated comparisons and sensitivity tables. Separate published references from team measurements, uncertainty, and deviations. Each number must trace to completed runs.
-
-Status: no measured result artifacts yet.
+Written by `python -m scripts.summarize_results` from `results/metrics/*.json`: `pm_main`, `eta_sweep`, `ps_main` (CSV + Markdown). Paper values (Tables 1, 2, 10, 11) appear in the `paper*` columns for comparison only.

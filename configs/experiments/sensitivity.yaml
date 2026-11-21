@@ -1,6 +1,31 @@
-# Define method-specific hyperparameter sweeps.
-#
-# Status: documentation only; not a runnable configuration.
-# Settings to specify: task/method/optimizer combinations, grids, seeds, selection criterion
-# Protocol notes: Appendix C, Figures 7-10/Tables 7-17. Resolve grid-count wording and multi-parameter sweep strategy before execution.
-# Unspecified settings must not be interpreted as defaults.
+# Experiment C (team analysis): sensitivity of SNR to its only hyperparameter eta on Permuted MNIST.
+# Paper claim (Section 3.2, Tables 10/11): accuracy changes by <= 2 points across eta in
+# {0.08, ..., 0.00125}. We add eta = 1e-6 (the value our first implementation needed) and the
+# histogram estimator (paper main text) next to the geometric one (paper footnote 3).
+# Reduced protocol: 300 tasks, seed 100 (same length as the first-version sweep in results/metrics/preliminary_v1/).
+# Run: python -m scripts.sweep configs/experiments/sensitivity.yaml --workers 8
+common: {benchmark: pm, tasks: 300, phase: sweep, reset: snr}
+seeds: [100]
+runs:
+  - {optimizer: sgd, eta: 0.08}
+  - {optimizer: sgd, eta: 0.04}
+  - {optimizer: sgd, eta: 0.02}
+  - {optimizer: sgd, eta: 0.01}
+  - {optimizer: sgd, eta: 0.005}
+  - {optimizer: sgd, eta: 0.0025}
+  - {optimizer: sgd, eta: 0.00125}
+  - {optimizer: sgd, eta: 0.000001}
+  - {optimizer: adam, eta: 0.08}
+  - {optimizer: adam, eta: 0.04}
+  - {optimizer: adam, eta: 0.02}
+  - {optimizer: adam, eta: 0.01}
+  - {optimizer: adam, eta: 0.005}
+  - {optimizer: adam, eta: 0.0025}
+  - {optimizer: adam, eta: 0.00125}
+  - {optimizer: adam, eta: 0.000001}
+  - {optimizer: sgd, eta: 0.08, estimator: histogram}
+  - {optimizer: sgd, eta: 0.01, estimator: histogram}
+  - {optimizer: sgd, eta: 0.00125, estimator: histogram}
+  - {optimizer: adam, eta: 0.08, estimator: histogram}
+  - {optimizer: adam, eta: 0.01, estimator: histogram}
+  - {optimizer: adam, eta: 0.00125, estimator: histogram}

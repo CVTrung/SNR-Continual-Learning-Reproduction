@@ -12,29 +12,32 @@ Repository URL: https://github.com/CVTrung/SNR-Continual-Learning-Reproduction
 
 The initial repository contains a documented scaffold only. It establishes the project structure, not completed experimental source code or results. The prompt does not specify a minimum code milestone or explicitly approve scaffold-only submissions. Pushing to GitHub does not submit the URL on Moodle. Do not report submission or acceptance without evidence.
 
-## Requirements mapped to files
+## Requirements mapped to files (status 2026-11-21, branch milestone2-core-scope)
 
-| Requirement | Owning location / intended evidence | Initial status |
+| Requirement | Owning location / evidence | Status |
 | --- | --- | --- |
-| One public team repository with development history | Root README, actual Git commits, public GitHub URL | Public repository verified; initial scaffold only |
-| Rebuild the method from the paper description | src/methods/; docs/reproduction_notes.md | Design notes only; no copied author implementation |
-| Original datasets, task generation, and models have clear boundaries | src/data/, src/tasks/, src/models/ | Responsibilities documented |
-| Full reproduction scope | docs/experiment_coverage.md; configs/experiments/ | Full-scope target mapped; no experiments completed |
-| Programmatic Hugging Face/Kaggle dataset preparation | src/data/; scripts/prepare_data.py | Local files present; sources/revisions/loading still to verify |
-| Reproducible configurations, seeds, and environment | configs/; requirements.txt; src/tracking.py; src/checkpoint.py | PyTorch/local-Colab proposed; versions/configs still deferred |
-| Every run tracked in one public W&B project | src/tracking.py; README experiment-to-evidence table | No verified project or runs recorded |
-| Compare against paper numbers and explain deviations | scripts/summarize_results.py; results/; docs/reproduction_notes.md | No measured numbers yet |
-| Run author code independently for verification and localize differences | notebooks/author_comparison.ipynb; docs/author_comparison.md | Not executed; method copying prohibited |
-| Paper understanding and original visual explanations | docs/paper_understanding.md; future reading/reproduction deck | Outline only; no deck authored |
-| At least three strengths, two theoretical limitations, and two linked future directions | docs/critical_analysis.md | Investigation prompts, not conclusions |
-| Controlled experiments demonstrating argued limitations | configs/experiments/critique.yaml; docs/empirical_demonstration.md | Not selected or run |
-| Actual contributions supported by history/artifacts | docs/contributions.md | Members and assignments not entered |
+| One public team repository with development history | README, Git commits, public GitHub URL | Repository public; core-scope work on branch `milestone2-core-scope` |
+| Rebuild the method from the paper description | src/methods/snr.py; docs/reproduction_notes.md | Done; author code read for verification only, nothing copied |
+| Clear data / task / model boundaries | src/data/, src/tasks/, src/models/ | Done |
+| Reproduction scope (core) | docs/experiment_coverage.md; configs/experiments/{main,shakespeare,sensitivity}.yaml | A, B, C implemented; reduced-protocol runs locally; full protocol prepared in notebooks/colab.ipynb |
+| Programmatic Hugging Face/Kaggle dataset preparation | scripts/prepare_data.py; docs/data_sources.md | MNIST from HF (pinned revision, sha256 verified); Shakespeare from the pinned authors' text file (no matching HF copy found; deviation recorded) |
+| Reproducible configurations, seeds, environment | configs/experiments/; requirements.txt; src/checkpoint.py; per-run JSON | Done; versions pinned from the tested environment |
+| Every run tracked in one public W&B project | src/tracking.py (wandb / trackio / none) | Code ready; the deck cites the team's Trackio dashboard; the public W&B project still has to be created by the team |
+| Compare against paper numbers and explain deviations | scripts/summarize_results.py; results/tables/; docs/reproduction_notes.md | Done for the reduced protocol |
+| Author-code verification | docs/author_comparison.md | Static comparison done; author runs not executed |
+| Reading + reproduction deck | deliverables/milestone2/ (build_deck.py, pptx) | Built from docs/7.pptx in English, with speaker notes |
+| Critique and empirical demonstration (poster, milestone 3) | docs/critical_analysis.md; configs/experiments/critique.yaml | Not started |
+| Actual contributions | docs/contributions.md | To be filled by the team |
 
 ## Scope decision
 
-This project targets full scope: all main paper experiments on the same or equivalent datasets, with equivalent choices justified. The supplementary scale-256 study is tracked explicitly. A folder or short smoke run does not complete an experiment.
+**Core scope**, a team decision recorded 2026-11-21 and explained in the deck. The course allows at least the two most important experiments, including the headline comparison, plus a team-designed analysis in place of the omitted ones. Ours:
 
-The course also permits core scope: at least the two most important experiments, including the headline comparison, with omitted experiments replaced by an additional team-designed analysis. Switching scope requires an explicit team decision and explanation in the deck; do not silently shrink this full-scope plan.
+- **A, headline:** Table 1, Permuted MNIST, all 8 conditions, SGD and Adam.
+- **B:** Permuted Shakespeare, Table 2 and Figures 2-4. It shows that SNR alone is not enough in a Transformer and needs L2.
+- **C, team analysis:** a sensitivity sweep of SNR over eta, which tests the paper's robustness claim. It also compares the paper's two estimators (geometric vs histogram).
+
+The reason is compute: no local GPU, and the full five-benchmark matrix would need hundreds of GPU-hours. RM, RC, CI, scaling and generalization are out of scope (see docs/experiment_coverage.md).
 
 ## Deliverables
 

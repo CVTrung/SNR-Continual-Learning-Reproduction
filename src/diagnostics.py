@@ -57,6 +57,7 @@ def attention_entropy(probs):
     return float(-(probs * p.log()).sum(dim=-1).mean())
 
 
+@torch.no_grad()
 def transformer_norms(model):
     """Frobenius norms of the Q, K and FFN weights (Figure 4)."""
     b = model.block

@@ -32,3 +32,5 @@ results/logs/
 .pytest_tmp/
 .superpowers/
 /checkpoints/
+# Paper PDF kept locally only (not redistributed)
+docs/*Paper-Conference.pdf

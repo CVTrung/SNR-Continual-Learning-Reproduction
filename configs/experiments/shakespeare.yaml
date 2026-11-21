@@ -1,6 +1,16 @@
-# Define base language comparisons and attention ablations.
-#
-# Status: documentation only; not a runnable configuration.
-# Settings to specify: PS/decoder/Adam, nine Table 2 conditions, seeds, diagnostics
-# Protocol notes: Figures 2-4/Table 2: 500 tasks and nine evaluation seeds. Include SNR+L2 and attention-only L2 variants; SNR alone is insufficient here.
-# Unspecified settings must not be interpreted as defaults.
+# Experiment B: Permuted Shakespeare (Table 2, Figures 2-4), 1-layer decoder Transformer, Adam lr 1e-3.
+# Run: python -m scripts.sweep configs/experiments/shakespeare.yaml --workers 6
+# Reduced protocol (local CPU): 30 tasks x 50 epochs, 2 seeds (paper: 500 tasks x 100 epochs, 9 seeds).
+# Hyperparameters: best values of the paper's Table 9 sweep (L2 1e-4, L2 Init 1e-5, SNR eta 0.03,
+# SNR+L2 eta 0.001 with lambda 1e-4); L2* uses the L2 strength. CBP and ReDO have no PS grid in
+# the paper and are not run. Full protocol: tasks: 500, epochs: 100 (Colab notebook).
+common: {benchmark: ps, tasks: 30, epochs: 50, phase: eval}
+seeds: [100, 101]
+runs:
+  - {reset: none}
+  - {penalty: l2, lam: 0.0001}
+  - {penalty: l2, penalty_mask: attention, lam: 0.0001}
+  - {penalty: l2init, lam: 0.00001}
+  - {reset: snr, eta: 0.03}
+  - {reset: snr, eta: 0.001, penalty: l2, lam: 0.0001}
+  - {reset: snr, eta: 0.001, penalty: l2, penalty_mask: attention, lam: 0.0001}

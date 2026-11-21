@@ -1,6 +1,25 @@
-# Define the four vision-benchmark comparison matrix.
-#
-# Status: documentation only; not a runnable configuration.
-# Settings to specify: PM/RM/RC/CI, matching models, eight conditions, SGD/Adam, tuning/evaluation seeds
-# Protocol notes: Targets Tables 1/6. Tune first, then evaluate with five fresh seeds; summarize final 10% task accuracy.
-# Unspecified settings must not be interpreted as defaults.
+# Experiment A (headline): Table 1, Permuted MNIST column, MLP, SGD and Adam, 8 conditions.
+# Run: python -m scripts.sweep configs/experiments/main.yaml --workers 12
+# Reduced protocol (local CPU): 600 of the paper's 2400 tasks, 3 evaluation seeds (paper: 5).
+# Hyperparameters are the best values reported in the paper's Appendix C sensitivity tables
+# (Tables 10/11, Figure 7); no team tuning sweep was run, so seeds 100-102 are all evaluation seeds.
+# Full protocol: set tasks: 2400 and seeds: [100, 101, 102, 103, 104] (Colab notebook).
+common: {benchmark: pm, tasks: 600, phase: eval}
+seeds: [100, 101, 102]
+runs:
+  - {optimizer: sgd, reset: none}
+  - {optimizer: sgd, reset: snr, eta: 0.005}
+  - {optimizer: sgd, reset: cbp, cbp_rate: 0.001}
+  - {optimizer: sgd, reset: redo, redo_tau: 0.01, redo_every: 8}
+  - {optimizer: sgd, penalty: l2, lam: 0.001}
+  - {optimizer: sgd, penalty: l2init, lam: 0.001}
+  - {optimizer: sgd, reset: snp, snp_shrink: 0.00001, snp_sigma: 0.001}
+  - {optimizer: sgd, layer_norm: true}
+  - {optimizer: adam, reset: none}
+  - {optimizer: adam, reset: snr, eta: 0.08}
+  - {optimizer: adam, reset: cbp, cbp_rate: 0.001}
+  - {optimizer: adam, reset: redo, redo_tau: 0.02, redo_every: 4}
+  - {optimizer: adam, penalty: l2, lam: 0.001}
+  - {optimizer: adam, penalty: l2init, lam: 0.001}
+  - {optimizer: adam, reset: snp, snp_shrink: 0.000001, snp_sigma: 0.001}
+  - {optimizer: adam, layer_norm: true}

@@ -1,33 +1,35 @@
-# Local and Colab environment plan
+# Setup (verified 2026-11-21)
 
-Purpose: describe the proposed team environment and the checks needed before using it. Inputs: the team code, current hardware, and verified compatibility information. Intended output: a reproducible local/Colab setup after validation. Status: documentation only; no environment creation, installation, login, or training performed in this update.
+## Local (Windows, CPU)
 
-## Proposed workflow
+Run these from the repository root. Each one was run successfully on Windows 11, with Python 3.12 managed by uv and 16 logical cores, no GPU.
 
-Use PyTorch for the team implementation. Develop and debug in a local .venv under the repository root; use a Google Colab GPU for longer experiments when resources are measured and available. Use the same team modules rather than maintaining independent notebook implementations.
+```bash
+uv venv .venv --python 3.12
+uv pip install --python .venv/Scripts/python.exe torch --index-url https://download.pytorch.org/whl/cpu
+uv pip install --python .venv/Scripts/python.exe -r requirements.txt
+.venv/Scripts/python.exe -m scripts.prepare_data          # MNIST from HF + Shakespeare text, sha256-checked
+.venv/Scripts/python.exe -m pytest -q                     # all tests
+.venv/Scripts/python.exe -m scripts.run_experiments --benchmark pm --reset snr --eta 0.005 --tasks 5
+.venv/Scripts/python.exe -m scripts.run_experiments --benchmark ps --reset snr --penalty l2 --lam 1e-4 --eta 0.001 --tasks 1 --epochs 5
+.venv/Scripts/python.exe -m scripts.sweep configs/experiments/main.yaml --workers 10      # reduced protocol A
+.venv/Scripts/python.exe -m scripts.sweep configs/experiments/sensitivity.yaml --workers 10
+.venv/Scripts/python.exe -m scripts.sweep configs/experiments/shakespeare.yaml --workers 6
+.venv/Scripts/python.exe -m scripts.summarize_results
+.venv/Scripts/python.exe -m scripts.plot_results
+.venv/Scripts/python.exe deliverables/milestone2/build_deck.py   # needs python-pptx
+```
 
-Python, PyTorch, torchvision (if needed), CUDA compatibility, and tokenizer versions have not been selected or tested. GPU availability and runtime limits on Colab are not guaranteed. requirements.txt currently describes anticipated dependencies in comments; installing it does not prepare a working environment.
+`pytest.ini` points pytest's temporary directory to `.pytest_tmp/` inside the repository, because the Windows user temp folder was not writable in the sandbox. Long runs can resume with `--checkpoint-every N --resume`.
 
-## Local preparation, to perform later
+## Colab (GPU)
 
-1. Inspect the actual local Python installation and hardware. Select a Python/PyTorch combination supported by the intended runtime before creating .venv.
-2. Create the ignored .venv, install the verified dependency set, and record versions and hardware. Do not borrow author-code dependencies as the team environment.
-3. Use the existing data/ files read-only while their provenance and schema are checked. src/data/ contains loaders, never raw datasets. See data_sources.md.
-4. Once implementation is authorized, verify imports, a small data batch, model behavior, and checkpoint/resume before attempting longer runs. None of those checks has been performed here.
-5. Record confirmed setup/run commands only after executing them successfully; no operational installation/training commands are claimed in this document.
+`notebooks/colab.ipynb` clones the branch, installs the packages Colab lacks, prepares the data, runs the tests, and then launches the full-protocol sweeps. Metrics and checkpoints go to Google Drive, so a disconnected session resumes where it stopped. It has not been executed yet.
 
-## Colab preparation, to perform later
+## Tracking and secrets
 
-Use notebooks/colab.ipynb as a thin entry point. Select the same repository commit and compatible pinned dependencies as local development. Record any unavoidable platform differences rather than claiming identical environments. Prepare datasets programmatically from verified Hugging Face/Kaggle sources; the local data/ directory will not travel through Git.
+- `--tracking trackio` sends rows to Trackio. Set `TRACKIO_SPACE_ID` (and `HF_TOKEN`) in the environment or in Colab Secrets to sync to a Hugging Face Space dashboard.
+- `--tracking wandb` needs `wandb login` or `WANDB_API_KEY`, plus optionally `WANDB_ENTITY`. The course asks for one public W&B project.
+- `--tracking none` (the default) keeps everything local.
 
-Record Python, PyTorch, CUDA/runtime, GPU model, repository commit, dependency versions, and dataset revision. Check persistent checkpoint storage and resume behavior before relying on an ephemeral runtime. No Colab session or GPU has been provisioned or tested.
-
-## W&B and secrets
-
-.env.example contains blank WANDB_ENTITY, WANDB_PROJECT, and WANDB_API_KEY entries. Values belong only in the ignored local .env or the runtime's secret facility. Merely adding .env does not load it into Python: a loading mechanism must be explicitly chosen when implementation begins. Do not display or commit API keys.
-
-One public W&B project is required for experiment evidence. Its account/entity, project, visibility, and authentication are not configured or verified in this scaffold. Do not create a project, log in, or publish a run on someone's behalf without authorization. Separate reference-code verification from team runs through clear provenance and later phase tags.
-
-## Deferred decisions
-
-Executable experiment YAML, official tuning/evaluation seed lists, and result-file conventions are intentionally deferred. Seed 42 is only a possible debug seed, not a mandatory protocol. Formal comparisons need multiple seeds and separate tuning/evaluation roles. See experiment_plan.md; this setup plan does not finalize them.
+In every mode the CSV/JSON files in `results/metrics/` are the local record. `.env.example` lists the variable names with blank values, and real values never enter Git.
