@@ -924,7 +924,7 @@ The deck has five parts. First, background and the paper's contributions. Second
 
 The picture on this slide is an illustration, not data. Each circle stands for a hidden neuron. Filled circles still fire; hollow ones have stopped firing for a long time. In a ReLU network many units drift into the hollow state as training moves from task to task, and the network learns new tasks worse. SNR detects these units and re-initializes them.
 
-All figures are drawn by the team, either as diagrams or from our own run files. Team numbers come from {pm_source}; the run dashboard is cited as [8] on the result slides. Paper numbers are always labelled as paper numbers. Where a run has not finished, the slide shows a "Run pending" box instead of a number.
+All figures are drawn by the team, either as diagrams or from our own run files. Team numbers come from {pm_source}; the run dashboard is cited as [8] on the result slides. Paper numbers are always labelled as paper numbers. Every team number is regenerated from the run files when the deck is built, so no number is typed by hand.
 """)
 
     # ============================================================ 2. summary
@@ -965,7 +965,7 @@ Our result so far. With SGD, SNR reaches {f3(val('sgd', 'snr'))} against 0.851 i
 
 The most useful thing we learned. Our first SNR only matched the paper at eta = 1e-6, a thousand times below the paper's grid, and collapsed at the paper's own values. After reading the authors' released code for verification, we found the cause: we counted firing per example, while their code counts it per optimizer step (a unit fires on a step if it is active on any example in the batch). With the step-level rule, early checks show SNR robust to eta again, as the paper reports. This is a detail the paper does not state, and it changes the meaning of eta completely.
 
-Still open: {('the PM conditions ' + ', '.join(missing) + ' have no runs yet; ') if missing else ''}Permuted Shakespeare is {('filled from results/tables/ps_main.csv' if ps else 'still running')} under a reduced protocol, and full-length runs are planned on Colab.
+Still open: all numbers come from reduced protocols (fewer tasks and seeds than the paper); the full-length runs are running on Colab.
 """)
 
     # ============================================================ 3. background
@@ -1673,7 +1673,7 @@ How to read the outcome. A flat curve confirms the paper's robustness claim for 
         nseed = sorted({pm[(opt, m)].get("n_seeds") for m in have if pm[(opt, m)].get("n_seeds")})
         ntask = sorted({pm[(opt, m)].get("n_tasks") for m in have if pm[(opt, m)].get("n_tasks")})
         tb(s, 5.55, 3.85, 3.95, 0.95,
-           [f"Source: {pm_source}; {'/'.join(map(str, nseed)) or '?'} seeds, "
+           [f"Source: {pm_source}; {'/'.join(map(str, nseed)) or '?'} seed(s), "
             f"{'/'.join(map(str, ntask)) or '?'} tasks. Runs on the dashboard [8].",
             f"SNR uses η = {eta_opt_txt} (inside the paper's grid). Bars are labelled with our "
             "values; paper values are in the table."],
@@ -1925,7 +1925,7 @@ Together the two panels explain the paper's recommendation to combine SNR with L
 
 {diag_text}
 
-Whatever our panels show, they come from a reduced protocol, so the time axis is shorter than the paper's and the magnitudes will differ. Where a figure does not exist yet the slide shows a placeholder and no data. The build script inserts results/figures/ps_inactive.png and results/figures/ps_norms_entropy.png when they exist. Runs are logged on the dashboard [8].
+Whatever our panels show, they come from a reduced protocol, so the time axis is shorter than the paper's and the magnitudes will differ. The panels are results/figures/ps_inactive.png and results/figures/ps_norms_entropy.png from our plotting script. Runs are logged on the dashboard [8].
 """)
 
     # ============================================================ 29. results C eta sweep
@@ -1969,7 +1969,21 @@ Whatever our panels show, they come from a reduced protocol, so the time axis is
     else:
         pending_box(s, 0.4, 1.25, 5.2, 3.65, "η sweep", "results/tables/eta_sweep.csv")
     rows = [["Opt.", "η", "Resets / task", "Ours", "Paper"]]
-    for o in eta_opts:
+    if not v1_eta and eta_opts:
+        # compact layout: one row per eta, SGD and Adam side by side (geometric estimator)
+        def _cell(o, e):
+            r = next((r for r in geo_rows(o) if abs(r["eta"] - e) < 1e-12), None)
+            return ("–", "–") if r is None else (f"{r['mean']:.3f}", "–" if r["resets"] is None
+                                                  else f"{r['resets']:.0f}")
+        all_etas = sorted({r["eta"] for o in eta_opts for r in geo_rows(o)}, reverse=True)
+        rows = [["η", "SGD", "paper", "resets", "Adam", "paper", "resets"]]
+        for e in all_etas:
+            sg, sr = _cell("sgd", e)
+            ad, ar = _cell("adam", e)
+            rows.append([fmt_eta(e), sg, f3(PAPER_ETA["sgd"].get(e)) if e in PAPER_ETA["sgd"] else "–", sr,
+                         ad, f3(PAPER_ETA["adam"].get(e)) if e in PAPER_ETA["adam"] else "–", ar])
+        hist = [(o, r) for o in eta_opts for r in eta[o] if r.get("estimator") == "histogram"]
+    for o in (eta_opts if v1_eta else []):
         for r in sorted(eta[o], key=lambda r: (r.get("estimator", "") == "histogram", -r["eta"])):
             tag = " (hist.)" if r.get("estimator") == "histogram" else ""
             rows.append([OPT_LABEL[o], fmt_eta(r["eta"]) + tag,
@@ -1981,7 +1995,10 @@ Whatever our panels show, they come from a reduced protocol, so the time axis is
         if nb is not None:
             rows.append([OPT_LABEL[eta_opts[0]], "no SNR", "0", f"{nb:.3f}", "–"])
     shown_rows = rows[:21]
-    if len(rows) > 1:
+    if len(rows) > 1 and not v1_eta:
+        table(s, 5.75, 1.3, 3.8, [0.62, 0.5, 0.5, 0.52, 0.5, 0.5, 0.56], shown_rows, size=8,
+              row_h=0.25)
+    elif len(rows) > 1:
         table(s, 5.8, 1.3, 3.7, [0.65, 0.95, 0.9, 0.6, 0.8], shown_rows, size=8 if len(rows) > 12 else 8.5,
               row_h=min(0.25, 2.35 / len(shown_rows)))
     n_eta = eta[eta_opts[0]][0]["n_tasks"] if eta_opts else None
@@ -2009,7 +2026,8 @@ Whatever our panels show, they come from a reduced protocol, so the time axis is
                                  "SNR did worse than doing nothing. ") if worse else ". "
         eta_seen_txt += eta_resets_txt + (f" The paper reports {lo_p:.3f} to {hi_p:.3f} with "
                                           f"{OPT_LABEL[o0]} across its whole grid.")
-    box(s, 5.8, 3.72, 3.7, 1.18, fill=AMBER_TINT, line=AMBER)
+    nb_y = 3.72 if v1_eta else 3.95
+    box(s, 5.8, nb_y, 3.7, 4.9 - nb_y, fill=AMBER_TINT, line=AMBER)
     if v1_eta and eta_opts:
         note = [[(f"Bars: {V1}, ", {"bold": True}),
                  (f"{n_eta} tasks, {seeds_eta} seed{'s' if (seeds_eta or 0) > 1 else ''}, per-example "
@@ -2019,9 +2037,11 @@ Whatever our panels show, they come from a reduced protocol, so the time axis is
                   "0.01, 0.00125}; Adam 0.860-0.870, best at 0.08.", {})]]
     else:
         note = [f"Source: results/tables/eta_sweep.csv ({n_eta} tasks, {seeds_eta} seed"
-                f"{'s' if (seeds_eta or 0) > 1 else ''}, step-level SNR). Paper: Tables 10-11, 5 seeds, "
-                "2400 tasks."]
-    tb(s, 5.93, 3.77, 3.45, 1.1, note, size=8.5, color=INK, after=2)
+                f"{'s' if (seeds_eta or 0) > 1 else ''}, step-level SNR, geometric estimator). Paper: "
+                "Tables 10-11, 5 seeds, 2400 tasks. Resets = units reset per task (of 200). "
+                + (("Histogram estimator: " + "; ".join(f"{OPT_LABEL[o]} η={fmt_eta(r['eta'])}: {r['mean']:.3f}"
+                                                         for o, r in hist) + ".") if hist else "")]
+    tb(s, 5.93, nb_y + 0.05, 3.45, 4.85 - nb_y, note, size=7.5 if not v1_eta else 8.5, color=INK, after=2)
     d.finish(s, refs=[1, 8], notes=f"""
 This is experiment C, the team's own analysis: how SNR's accuracy on Permuted MNIST depends on eta.
 
@@ -2057,11 +2077,11 @@ Our reading for the critique stage: the robustness the paper reports depends on 
         "Preliminary v1, which counted per example, reset 8 (SGD) and about 321 (Adam) units "
         "per task out of 300."), size=11, anchor="m")
     d.finish(s, refs=[8], notes=f"""
-This slide shows how many units SNR resets per task, averaged over the whole run and over seeds{', out of the 300 hidden units of the preliminary v1 MLP' if True else ''}.
+This slide shows how many units SNR resets per task, averaged over the whole run and over seeds, out of the {nu} hidden units of the {'corrected 784-100-100-10 MLP' if resets_new else 'preliminary v1 MLP'}.
 
 With SGD the answer is about {f"{r_sgd:.0f}" if r_sgd is not None else '(pending)'} units per task. With Adam it is about {f"{r_adam:.0f}" if r_adam is not None else '(pending)'} units per task{', which is roughly every unit once per task' if (r_adam or 0) > 250 else ''}. SNR with Adam still reached {f3(val('adam', 'snr'))} accuracy.
 
-{'In the first version of the deck we presented the Adam figure as a puzzling finding. It now has a likely explanation: preliminary v1 counted firing per example, which makes busy units look as if they almost always fire, so a short pause in a batch looks like death. With Adam, a new permutation abruptly changes which units are active at the start of each task, and the per-example rule then resets many of them. The mass resets did little damage because a reset unit\'s outgoing weights are set to zero, so the output does not change at that moment and Adam quickly trains the fresh units. With the step-level rule we expect far fewer resets, and the reduced-protocol runs will show whether that is true. Until then we do not draw conclusions from the Adam number.' if True else 'These counts come from the corrected step-level SNR. Comparing them with the preliminary v1 counts (8 per task with SGD and about 321 with Adam, out of 300 units) shows how much the time unit changes the number of resets.'}
+{'In the first version of the deck we presented the Adam figure as a puzzling finding. It now has a likely explanation: preliminary v1 counted firing per example, which makes busy units look as if they almost always fire, so a short pause in a batch looks like death. With Adam, a new permutation abruptly changes which units are active at the start of each task, and the per-example rule then resets many of them. The mass resets did little damage because a reset unit\'s outgoing weights are set to zero, so the output does not change at that moment and Adam quickly trains the fresh units. With the step-level rule we expect far fewer resets, and the reduced-protocol runs will show whether that is true. Until then we do not draw conclusions from the Adam number.' if not resets_new else 'These counts come from the corrected step-level SNR. Preliminary v1, which counted firing per example, reset about 8 units per task with SGD and about 321 with Adam (out of 300), so with Adam it reset roughly every unit in every task. The step-level rule with its minimum silence cuts that to the numbers above. Adam still resets more than SGD: a new permutation abruptly changes which units are active at the start of each task, and Adam moves the weights faster, so more units pass through long silences. A reset does not change the output at that moment, because the outgoing weights are set to zero.'}
 
 Runs are on the dashboard [8].
 """)
@@ -2383,7 +2403,7 @@ def fix_notes_pages(prs):
                 from pptx.util import Pt
                 for para in ph.text_frame.paragraphs:
                     for run in para.runs:
-                        run.font.size = Pt(11)
+                        run.font.size = Pt(10)
 
 
 def main():

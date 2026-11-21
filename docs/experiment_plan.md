@@ -8,16 +8,16 @@ Reproduce the headline Permuted MNIST comparison (A) and the Permuted Shakespear
 
 - Matched within each benchmark: same task sequence, same seed meaning, same architecture, optimizer settings and number of steps. The interventions differ only in the reset rule, the penalty, or the LayerNorm flag, all through one training loop (`src/train.py`).
 - One seed sets the 10k subset, every task permutation, the initialization and the batch order. This follows the paper's definition of a seed.
-- Hyperparameters: there is no budget for the paper's tuning sweeps, so each method uses the best value the paper reports (Appendix C, Tables 9-11). No team tuning took place, so every seed (100-102 for PM, 100-101 for PS) is a fresh evaluation seed. Seeds 0-2 were used by earlier exploratory runs and are not reused.
+- Hyperparameters: there is no budget for the paper's tuning sweeps, so each method uses the best value the paper reports (Appendix C, Tables 9-11). No team tuning took place, so every seed (100-102 for PM, 100 for PS) is a fresh evaluation seed. Seeds 0-2 were used by earlier exploratory runs and are not reused.
 - Metrics: PM uses mean online accuracy over the last 10% of tasks, where online accuracy is the prediction made before each update, over the task's single epoch. PS uses the loss on the final epoch of each task, averaged over all tasks, the first 10% and the last 10% of tasks (the paper's first/last 50 of 500).
 
 ## Protocols
 
 | | Paper | Reduced (local CPU, done) | Full (Colab notebook) |
 | --- | --- | --- | --- |
-| PM tasks / seeds | 2400 / 5 | 600 / 3 | 2400 / 5 |
-| PM eta sweep | 2400 / 5 | 600 / 1 (seed 100) | 2400 / 1+ |
-| PS tasks x epochs / seeds | 500 x 100 / 9 | 50 x 50 / 2 | 500 x 100 / 2+ |
+| PM tasks / seeds | 2400 / 5 | 600 / SGD 2-3, Adam 1 | 2400 / 5 |
+| PM eta sweep | 2400 / 5 | 300 / 1 (seed 100) | 2400 / 1+ |
+| PS tasks x epochs / seeds | 500 x 100 / 9 | 30 x 50 / 1 | 500 x 100 / 1+ (running) |
 
 ## Measured resources (Windows 11, 16 logical CPU cores, no GPU)
 

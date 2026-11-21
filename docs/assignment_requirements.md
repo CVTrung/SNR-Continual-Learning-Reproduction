@@ -22,7 +22,7 @@ The initial repository contains a documented scaffold only. It establishes the p
 | Reproduction scope (core) | docs/experiment_coverage.md; configs/experiments/{main,shakespeare,sensitivity}.yaml | A, B, C implemented; reduced-protocol runs locally; full protocol prepared in notebooks/colab.ipynb |
 | Programmatic Hugging Face/Kaggle dataset preparation | scripts/prepare_data.py; docs/data_sources.md | MNIST from HF (pinned revision, sha256 verified); Shakespeare from the pinned authors' text file (no matching HF copy found; deviation recorded) |
 | Reproducible configurations, seeds, environment | configs/experiments/; requirements.txt; src/checkpoint.py; per-run JSON | Done; versions pinned from the tested environment |
-| Every run tracked in one public W&B project | src/tracking.py (wandb / trackio / none) | Code ready; the deck cites the team's Trackio dashboard; the public W&B project still has to be created by the team |
+| Every run tracked in one public W&B project | src/tracking.py (wandb / trackio / none) | Done: public W&B project `snr-reproduction` (https://wandb.ai/vutrung2903-tr-ng-i-h-c-khoa-h-c-t-nhi-n-hqg-hcm/snr-reproduction); all finished runs uploaded (scripts/sync_wandb.py); Colab runs log live |
 | Compare against paper numbers and explain deviations | scripts/summarize_results.py; results/tables/; docs/reproduction_notes.md | Done for the reduced protocol |
 | Author-code verification | docs/author_comparison.md | Static comparison done; author runs not executed |
 | Reading + reproduction deck | deliverables/milestone2/ (build_deck.py, pptx) | Built from docs/7.pptx in English, with speaker notes |

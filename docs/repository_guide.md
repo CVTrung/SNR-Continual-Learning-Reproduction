@@ -28,6 +28,7 @@ Status: core scope, executable (updated 2026-11-21). The full-scope stubs (CNN, 
 | [scripts/prepare_data.py](../scripts/prepare_data.py) | Download MNIST (HF `ylecun/mnist`, pinned revision) and the Shakespeare text (pinned GitHub raw), checked by SHA-256. | network | `src/data/<name>/` |
 | [scripts/run_experiments.py](../scripts/run_experiments.py) | Run one experiment (PM or PS) with composable reset rule, penalty and LayerNorm. | CLI / flat YAML | `results/metrics/<run>.csv` + `.json` |
 | [scripts/sweep.py](../scripts/sweep.py) | Run an experiment matrix in parallel; skips finished runs. | `configs/experiments/*.yaml` | many runs |
+| [scripts/sync_wandb.py](../scripts/sync_wandb.py) | Upload finished local runs (and tagged preliminary-v1 runs) to the public W&B project; writes results/wandb_runs.csv. | results/metrics, W&B login | W&B runs |
 | [scripts/summarize_results.py](../scripts/summarize_results.py) | Aggregate runs into the deck/README tables, next to the paper's values. | `results/metrics/*.json/csv` | `results/tables/*.csv/.md` |
 | [scripts/plot_results.py](../scripts/plot_results.py) | Team figures (accuracy, dead units, eta sweep, PS loss/inactivity/norms/entropy). | metrics, tables | `results/figures/*.png` |
 | [configs/experiments/main.yaml](../configs/experiments/main.yaml) | Experiment A: PM Table 1, 8 conditions x SGD/Adam. | - | run matrix |

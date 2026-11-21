@@ -34,10 +34,16 @@ Status: core-scope implementation complete (2026-11-21). Reduced-protocol runs w
 
 ## Protocol deviations (labelled wherever results appear)
 
-- **Reduced protocol** because only a CPU was available. PM: 600 of 2400 tasks, 3 of 5 seeds. PS: 50 of 500 tasks, 50 of 100 epochs, 2 of 9 seeds. Eta sweep: 600 tasks, 1 seed.
+- **Reduced protocol** because only a CPU was available. PM: 600 of 2400 tasks; SGD 2-3 seeds, Adam 1 seed (runs were cut by RAM limits on the laptop). PS: 30 of 500 tasks, 50 of 100 epochs, 1 of 9 seeds. Eta sweep: 300 tasks, 1 seed.
 - **No team tuning.** Each method uses the paper's reported best hyperparameter (Tables 9-11), so the paper's tuning protocol is not reproduced. The comparison is conditional on those settings transferring to our implementation and to the shorter runs.
 - **Metric window.** "Last 10% of tasks" is the last 60 tasks at 600 tasks and the last 240 at 2400, so reduced runs are not directly comparable with Table 1 numbers. The no-intervention baseline declines over time, so the gap would widen at 2400 tasks.
-- **Tracking.** Runs were logged locally (CSV + JSON with config, commit and environment). The deck cites the team's Trackio dashboard. The course's public W&B project still has to be created by the team, using `--tracking wandb`.
+- **Tracking.** Runs were logged locally (CSV + JSON with config, commit and environment) and uploaded to the public W&B project https://wandb.ai/vutrung2903-tr-ng-i-h-c-khoa-h-c-t-nhi-n-hqg-hcm/snr-reproduction with scripts/sync_wandb.py, tagged `uploaded-from-csv`. Colab runs log live with `--tracking wandb`.
+
+## Findings that differ from the paper (reduced protocol)
+
+- Shrink & Perturb: 0.663 (SGD) and 0.708 (Adam) against 0.826 and 0.876. Our perturbation is sigma * N(0, 1) on every parameter at every step. S&P is usually drawn from the initialization distribution (std 1/sqrt(fan_in), about 28x smaller on the first layer). Kept as found, by team decision; init-scaled noise is the next run.
+- Permuted Shakespeare L2*: attention-only L2 did not help in 30 short tasks (2.79 vs 1.74 for full L2), while in the paper it is best. Under L2* the FFN weight norm grows the most and attention entropy still collapses. To be checked in the full 500 x 100 run.
+- Adam no-intervention is +0.105 above the paper at 600 tasks, because the Adam baseline has not collapsed yet. The paper's number is at 2400 tasks.
 
 ## Reused standard components
 

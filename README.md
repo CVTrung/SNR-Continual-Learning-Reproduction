@@ -45,14 +45,22 @@ src/train.py   one training loop for every method and both benchmarks
 scripts/       prepare_data, run_experiments, sweep, summarize_results, plot_results
 configs/experiments/   main.yaml (A), shakespeare.yaml (B), sensitivity.yaml (C)
 results/       metrics (per-run CSV + JSON), tables, figures
-deliverables/milestone2/   deck build script and the milestone-2 PPTX
+deliverables/milestone2/   deck build script and the milestone-2 PPTX (Group7_SNR_Milestone2.pptx)
 ```
 
 ## Experiment-to-evidence mapping
 
-RESULTS_TABLE_PLACEHOLDER
+Public W&B project: [wandb.ai/vutrung2903-tr-ng-i-h-c-khoa-h-c-t-nhi-n-hqg-hcm/snr-reproduction](https://wandb.ai/vutrung2903-tr-ng-i-h-c-khoa-h-c-t-nhi-n-hqg-hcm/snr-reproduction). Run names match the files in `results/metrics/`. Tags give the phase: `eval`, `sweep`, or `preliminary-v1` for the superseded first version. Runs tagged `uploaded-from-csv` were logged from the saved per-task files after local training, while Colab runs log live. Run links: `results/wandb_runs.csv`.
 
-Every run has `results/metrics/<run>.csv` (per task) and `<run>.json` (resolved config, commit, environment, seconds per task). The deck cites the team's Trackio dashboard. The course's public W&B project has not been created yet; once the team creates it, run with `--tracking wandb` to fill it.
+| Experiment / paper target | Script and config | Runs (W&B) | Result (reduced protocol) and conclusion |
+| --- | --- | --- | --- |
+| A. Permuted MNIST, Table 1 (8 conditions, SGD/Adam) | `scripts/sweep.py configs/experiments/main.yaml` | runs `pm_*_tasks600` with tag `eval` | 600 of 2400 tasks; SGD 2-3 seeds, Adam 1 seed. SNR 0.831 (SGD; paper 0.851) and 0.874 (Adam; paper 0.889). SNR is level with CBP (0.833) and L2 Init (0.880 with Adam), and well above no intervention (0.763 / 0.746). Plasticity loss and dead units appear clearly. Shrink & Perturb collapses (0.663), probably because of our noise scale; see deviations. [table](results/tables/pm_main.md) |
+| B. Permuted Shakespeare, Table 2 / Figs 2-4 | `scripts/sweep.py configs/experiments/shakespeare.yaml` | runs `ps_*_tasks30_ep50` | 30 of 500 tasks, 50 of 100 epochs, 1 seed. Loss on the last tasks: no intervention 2.80, SNR 2.85 (≈ no intervention, as in the paper), L2 1.74, SNR+L2 1.66 (lowest, as in the paper). L2* (attention only) did not help (2.79), unlike the paper. SNR keeps the FFN units alive, and only L2 stops the attention-entropy collapse. [table](results/tables/ps_main.md), [diagnostics](results/tables/ps_diagnostics.md) |
+| C. η sensitivity (team analysis) | `scripts/sweep.py configs/experiments/sensitivity.yaml` | runs `pm_snr*_tasks300` with tag `sweep` | 300 tasks, 1 seed. Across the paper's grid SGD stays at 0.820-0.826 and Adam at 0.864-0.875 (best at η = 0.08, as in the paper), so the robustness claim reproduces with the step-level SNR. The first version (per-example firing) collapsed to 0.25 at η = 0.01. [table](results/tables/eta_sweep.md) |
+| Full protocol (2400 tasks; 500 × 100 PS) | `notebooks/colab.ipynb` | PS runs `*_tasks500_ep100` (live) | running on Colab, not yet reported |
+
+
+Every run has `results/metrics/<run>.csv` (per task) and `<run>.json` (resolved config, commit, environment, seconds per task). The deck cites the W&B project and the team's Trackio dashboard. `python -m scripts.sync_wandb --include-v1` uploads newly finished local runs.
 
 ## Integrity notes
 
