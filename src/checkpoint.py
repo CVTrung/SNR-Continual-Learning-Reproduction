@@ -25,6 +25,7 @@ def save_checkpoint(path, model, optimizer, generator, next_task, history, metho
         "generator": generator.get_state(),
         "torch_rng": torch.get_rng_state(),
         "numpy_rng": np.random.get_state(),
+        "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
         "next_task": next_task,
         "history": history,
         "methods": {k: m.state_dict() for k, m in (methods or {}).items()
@@ -44,6 +45,8 @@ def load_checkpoint(path, model, optimizer, generator, methods=None):
     generator.set_state(state["generator"])
     torch.set_rng_state(state["torch_rng"])
     np.random.set_state(state["numpy_rng"])
+    if state.get("cuda_rng") is not None and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all(state["cuda_rng"])
     for key, method in (methods or {}).items():
         if key in state["methods"]:
             method.load_state_dict(state["methods"][key])

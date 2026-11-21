@@ -53,4 +53,5 @@ class ReDO:
         return {"sum_act": self.sum_act, "steps": self.steps}
 
     def load_state_dict(self, state):
-        self.sum_act, self.steps = state["sum_act"], state["steps"]
+        dev = self.sum_act[0].device
+        self.sum_act, self.steps = [t.to(dev) for t in state["sum_act"]], state["steps"]

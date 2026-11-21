@@ -50,4 +50,4 @@ class L2Init:
         return {"reference": self.reference}
 
     def load_state_dict(self, state):
-        self.reference = state["reference"]
+        self.reference = [r.to(p.device) for r, p in zip(state["reference"], self.reference)]

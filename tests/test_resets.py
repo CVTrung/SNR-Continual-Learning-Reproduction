@@ -90,8 +90,23 @@ def test_dead_from_init_is_reset_after_initial_threshold():
     assert snr.pop_resets() == 3
 
 
+def test_dense_unit_waits_for_minimum_silence_whatever_eta():
+    """Review finding I1: with mu = 1 the geometric tail is 0 for a >= 2, so without a floor
+    every dense unit was reset after 2 silent steps for any eta."""
+    for eta in (0.08, 0.00125):
+        model, _, snr = _setup(eta=eta)
+        snr.run_mean[0] = torch.full((3,), 1.0)
+        snr.seen[0] = torch.ones(3, dtype=torch.bool)
+        for _ in range(snr.min_silence):
+            snr(model, _silent())
+        assert snr.pop_resets() == 0
+        snr(model, _silent())
+        assert snr.pop_resets() == 3
+
+
 def test_reset_clears_statistics_and_outgoing_weights():
     model, _, snr = _setup()
+    snr.min_silence = 1
     snr.run_mean[0] = torch.full((3,), 1.0)
     snr.seen[0] = torch.ones(3, dtype=torch.bool)
     old_in = model.hidden_layers[0].weight.detach().clone()
@@ -107,6 +122,7 @@ def test_reset_clears_statistics_and_outgoing_weights():
 
 def test_histogram_estimator_uses_empirical_quantile():
     model, _, snr = _setup(eta=0.25, estimator="histogram")
+    snr.min_silence = 1
     # neuron runs recorded: 1, 1, 1, 4  -> P(R > 1) = 0.25 <= eta, so q = 1: reset when a > 1
     for run in (1, 1, 1, 4):
         for _ in range(run):
@@ -122,6 +138,7 @@ def test_histogram_estimator_uses_empirical_quantile():
 
 def test_adam_state_is_cleared_for_reset_neurons():
     model, opt, snr = _setup("adam")
+    snr.min_silence = 1
     model(torch.randn(8, 4)).sum().backward()
     opt.step()                             # creates exp_avg / exp_avg_sq
     snr.run_mean[0] = torch.full((3,), 1.0)
@@ -149,7 +166,7 @@ def test_snr_on_transformer_resets_ffn_units_only():
     torch.manual_seed(0)
     model = DecoderTransformer(vocab_size=11, context=8, n_ffn=6)
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)
-    snr = SNR(model, opt, eta=0.01)
+    snr = SNR(model, opt, eta=0.01, min_silence=1)
     snr.run_mean[0] = torch.full((6,), 1.0)
     snr.seen[0] = torch.ones(6, dtype=torch.bool)
     attn_before = [p.detach().clone() for p in model.attention_parameters()]

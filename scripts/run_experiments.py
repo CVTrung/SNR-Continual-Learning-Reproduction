@@ -63,6 +63,7 @@ def build_parser():
     p.add_argument("--beta", type=float, default=0.1)
     p.add_argument("--m-init", type=float, default=1000.0)
     p.add_argument("--window-tasks", type=int, default=1)
+    p.add_argument("--min-silence", type=int, default=6, help="steps; no SNR reset before")
     # penalties
     p.add_argument("--lam", type=float, default=1e-3)
     # baselines
@@ -164,7 +165,8 @@ def build_interventions(args, model, optimizer):
     reset = None
     if args.reset == "snr":
         reset = SNR(model, optimizer, eta=args.eta, estimator=args.estimator, beta=args.beta,
-                    m_init=args.m_init, window_tasks=args.window_tasks)
+                    m_init=args.m_init, window_tasks=args.window_tasks,
+                    min_silence=args.min_silence)
     elif args.reset == "cbp":
         reset = CBP(model, optimizer, replacement_rate=args.cbp_rate,
                     maturity=args.cbp_maturity, batch_size=args.batch_size)

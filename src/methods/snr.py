@@ -23,6 +23,12 @@ Team decisions (docs/reproduction_notes.md records the evidence):
   unit, collected over a trailing window of `window_tasks` tasks. At the end of each window,
   threshold_i becomes the smallest r with empirical P(R > r) <= eta, and the unit is reset
   when a_i > threshold_i. Units with no completed run in the window keep their threshold.
+- Minimum silence `min_silence` (default 6 steps, about 100 examples at batch 16): no unit
+  is reset before it has been silent for more than this many steps. Without the floor, a
+  dense unit whose silent runs all last 1 step gets mu = 1, so p = 1, and it is reset after
+  2 silent steps whatever eta is. That makes eta irrelevant for most resets (found in the
+  final review). The paper gives no value; the authors' code (verification only) never
+  thresholds below 100 examples.
 - A reset unit starts fresh. Its age, mean and histogram are cleared, and so is its own
   threshold in histogram mode. The mechanics are in resets.py: incoming weights redrawn,
   bias 0, outgoing weights 0, Adam moments of those entries 0.
@@ -37,7 +43,7 @@ from src.methods.resets import fired_per_step, reinit_units
 
 class SNR:
     def __init__(self, model, optimizer, eta=0.01, estimator="geometric", beta=0.1,
-                 m_init=1000.0, window_tasks=1, tau_max=20_000):
+                 m_init=1000.0, window_tasks=1, tau_max=20_000, min_silence=6):
         if estimator not in ("geometric", "histogram"):
             raise ValueError(f"unknown estimator: {estimator}")
         self.optimizer = optimizer
@@ -49,6 +55,7 @@ class SNR:
         self.m_init = float(m_init)
         self.window_tasks = window_tasks
         self.tau_max = int(tau_max)
+        self.min_silence = int(min_silence)
         device = next(model.parameters()).device
         sizes = [layer.out_features for layer, _ in self.groups]
         self.age = [torch.zeros(n, dtype=torch.long, device=device) for n in sizes]
@@ -104,12 +111,13 @@ class SNR:
 
     def _reset_mask(self, i):
         a = self.age[i]
+        long_enough = a > self.min_silence
         if self.estimator == "histogram":
-            return a > self.threshold[i]
+            return long_enough & (a > self.threshold[i])
         p = (1.0 / self.run_mean[i]).clamp(max=1.0)
         # (1 - p)^(a - 1) <= eta  <=>  (a - 1) * log(1 - p) <= log(eta); p = 1 gives -inf for a >= 2
         log_tail = (a - 1).float() * torch.log1p(-p)
-        return (a >= 1) & (torch.nan_to_num(log_tail, nan=0.0) <= self.log_eta)
+        return long_enough & (torch.nan_to_num(log_tail, nan=0.0) <= self.log_eta)
 
     def _reset(self, i, idx):
         in_layer, out_layer = self.groups[i]
@@ -149,7 +157,9 @@ class SNR:
         return out
 
     def load_state_dict(self, state):
-        self.age, self.run_mean, self.seen = state["age"], state["run_mean"], state["seen"]
+        dev = self.age[0].device           # checkpoints are loaded on CPU; move to the model's device
+        move = lambda ts: [t.to(dev) for t in ts]  # noqa: E731
+        self.age, self.run_mean, self.seen = move(state["age"]), move(state["run_mean"]), move(state["seen"])
         self._tasks_in_window = state["tasks_in_window"]
         if self.estimator == "histogram":
-            self.hist, self.threshold = state["hist"], state["threshold"]
+            self.hist, self.threshold = move(state["hist"]), move(state["threshold"])

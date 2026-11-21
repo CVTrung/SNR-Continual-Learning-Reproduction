@@ -133,7 +133,7 @@ def plot_eta():
 
 def plot_ps():
     groups = {}
-    for meta, df in runs("ps"):
+    for meta, df in runs("ps", "eval"):
         groups.setdefault(ps_condition(meta), []).append(df)
     if not groups:
         return

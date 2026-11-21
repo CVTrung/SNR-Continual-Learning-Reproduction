@@ -55,22 +55,22 @@ def load_runs():
 
 
 def pm_method(meta):
+    """(label, hyperparameter text) of a PM run; combined interventions get joined labels."""
     reset, penalty = meta["reset"], meta["penalty"]
-    if meta.get("layer_norm") and reset == "none" and penalty == "none":
-        return "LayerNorm", "-"
-    if reset == "snr" and penalty == "none":
-        return "SNR", f"eta={meta['eta']:g}"
-    if reset == "cbp":
-        return "CBP", f"r={meta['cbp_rate']:g}"
-    if reset == "redo":
-        return "ReDO", f"tau={meta['redo_tau']:g}, every {meta['redo_every']} tasks"
-    if reset == "snp":
-        return "S&P", f"shrink={meta['snp_shrink']:g}, sigma={meta['snp_sigma']:g}"
-    if penalty == "l2":
-        return "L2", f"lambda={meta['lam']:g}"
-    if penalty == "l2init":
-        return "L2 Init", f"lambda={meta['lam']:g}"
-    return "None", "-"
+    parts, hp = [], []
+    if reset == "snr":
+        parts.append("SNR"); hp.append(f"eta={meta['eta']:g}")
+    elif reset == "cbp":
+        parts.append("CBP"); hp.append(f"r={meta['cbp_rate']:g}")
+    elif reset == "redo":
+        parts.append("ReDO"); hp.append(f"tau={meta['redo_tau']:g}, every {meta['redo_every']} tasks")
+    elif reset == "snp":
+        parts.append("S&P"); hp.append(f"shrink={meta['snp_shrink']:g}, sigma={meta['snp_sigma']:g}")
+    if penalty in ("l2", "l2init"):
+        parts.append("L2" if penalty == "l2" else "L2 Init"); hp.append(f"lambda={meta['lam']:g}")
+    if meta.get("layer_norm"):
+        parts.append("LayerNorm")
+    return ("+".join(parts) or "None"), (", ".join(hp) or "-")
 
 
 def ps_condition(meta):
@@ -104,6 +104,8 @@ def main():
         if meta["benchmark"] != "pm" or meta.get("phase") != "eval":
             continue
         method, hparam = pm_method(meta)
+        if method not in PAPER_PM[meta["optimizer"]]:
+            continue
         key = (meta["optimizer"], method, hparam, meta["tasks"])
         rows.setdefault(key, []).append(last10(df["online_accuracy"].to_numpy())[0])
     pm = [dict(optimizer=o, method=m, hparam=h, n_seeds=len(v), n_tasks=t, mean=agg(v)[0],
@@ -116,10 +118,9 @@ def main():
 
     rows = {}
     for meta, df in runs:
-        if meta["benchmark"] != "pm" or meta["reset"] != "snr" or meta["penalty"] != "none":
-            continue
-        if meta["seed"] != 100:       # the sweep uses seed 100; main runs add seeds 101-102
-            continue
+        if (meta["benchmark"] != "pm" or meta.get("phase") != "sweep" or meta["reset"] != "snr"
+                or meta["penalty"] != "none"):
+            continue                  # only the sensitivity sweep (one task count, seed 100)
         key = (meta["optimizer"], meta.get("estimator", "geometric"), meta["eta"], meta["tasks"])
         rows.setdefault(key, []).append((last10(df["online_accuracy"].to_numpy())[0],
                                          float(df["resets"].mean())))
@@ -134,7 +135,7 @@ def main():
 
     rows = {}
     for meta, df in runs:
-        if meta["benchmark"] != "ps":
+        if meta["benchmark"] != "ps" or meta.get("phase") != "eval":
             continue
         key = (ps_condition(meta), meta["tasks"], meta["epochs"])
         rows.setdefault(key, []).append(last10(df["final_loss"].to_numpy()))

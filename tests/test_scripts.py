@@ -37,3 +37,37 @@ def test_experiment_configs_parse():
     for cfg in ("main", "sensitivity", "shakespeare"):
         jobs = expand(f"configs/experiments/{cfg}.yaml")
         assert jobs and all(parse_args(argv) for argv in jobs)
+
+
+def _fake_run(dirpath, name, meta, rows):
+    import json
+    import pandas as pd
+    pd.DataFrame(rows).to_csv(dirpath / f"{name}.csv", index=False)
+    (dirpath / f"{name}.json").write_text(json.dumps(meta))
+
+
+def test_summary_keeps_sweep_and_eval_apart(tmp_path, monkeypatch):
+    """Review finding I2: eval runs at another task count leaked into the eta sweep table."""
+    import pandas as pd
+    import scripts.summarize_results as sr
+    metrics, tables = tmp_path / "m", tmp_path / "t"
+    metrics.mkdir()
+    base = dict(benchmark="pm", reset="snr", penalty="none", penalty_mask="all", layer_norm=False,
+                optimizer="sgd", seed=100, estimator="geometric", lam=0.001)
+    rows = [{"task": t, "online_accuracy": 0.5, "resets": 1} for t in range(10)]
+    _fake_run(metrics, "a", dict(base, eta=0.005, tasks=10, phase="eval"), rows)
+    _fake_run(metrics, "b", dict(base, eta=0.005, tasks=5, phase="sweep"), rows[:5])
+    _fake_run(metrics, "c", dict(base, eta=0.005, tasks=5, phase="smoke", reset="snr"), rows[:5])
+    monkeypatch.setattr(sr, "METRICS", metrics)
+    monkeypatch.setattr(sr, "TABLES", tables)
+    sr.main()
+    eta = pd.read_csv(tables / "eta_sweep.csv")
+    assert eta["n_tasks"].tolist() == [5] and eta["n_seeds"].tolist() == [1]
+    pm = pd.read_csv(tables / "pm_main.csv")
+    assert pm["n_tasks"].tolist() == [10]
+
+
+def test_combined_interventions_are_labelled():
+    from scripts.summarize_results import pm_method
+    meta = dict(reset="snr", penalty="l2", layer_norm=False, eta=0.01, lam=0.001)
+    assert pm_method(meta)[0] == "SNR+L2"

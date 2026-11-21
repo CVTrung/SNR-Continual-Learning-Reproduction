@@ -69,4 +69,7 @@ class CBP:
         return {"utility": self.utility, "age": self.age, "credit": self.credit}
 
     def load_state_dict(self, state):
-        self.utility, self.age, self.credit = state["utility"], state["age"], state["credit"]
+        dev = self.age[0].device
+        self.utility = [t.to(dev) for t in state["utility"]]
+        self.age = [t.to(dev) for t in state["age"]]
+        self.credit = list(state["credit"])

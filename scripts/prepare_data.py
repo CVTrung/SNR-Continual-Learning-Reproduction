@@ -62,9 +62,12 @@ def prepare_mnist():
             continue
         cached = hf_hub_download(MNIST_REPO, f"mnist/{name}", repo_type="dataset",
                                  revision=MNIST_REV)
-        target.write_bytes(Path(cached).read_bytes())
-        if sha256(target) != digest:
+        tmp = target.with_suffix(".tmp")
+        tmp.write_bytes(Path(cached).read_bytes())
+        if sha256(tmp) != digest:
+            tmp.unlink()
             raise SystemExit(f"hash mismatch after download: {target}")
+        tmp.replace(target)
         print(f"downloaded   {target}")
     meta = {"source": f"hf://datasets/{MNIST_REPO}", "revision": MNIST_REV, "sha256": MNIST_FILES}
     (out / "PROVENANCE.json").write_text(json.dumps(meta, indent=1))
