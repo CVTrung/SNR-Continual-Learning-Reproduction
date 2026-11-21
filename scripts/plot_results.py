@@ -82,7 +82,7 @@ def plot_pm():
                 continue
             curve = pd.Series(mean_curve(frames, "online_accuracy")).rolling(20, min_periods=1).mean()
             ax.plot(curve, color=color, linewidth=2 if method in ("SNR", "None") else 1.4,
-                    label=f"{method} ({len(frames)} seeds)")
+                    label=f"{method} ({len(frames)} seed{'s' if len(frames) > 1 else ''})")
         style(ax, f"Permuted MNIST, {opt.upper()}: online accuracy per task",
               "task", "online accuracy (20-task rolling mean)")
         ax.legend(fontsize=7.5, frameon=False, ncol=2, loc="lower left")
@@ -142,7 +142,7 @@ def plot_ps():
         if cond in groups:
             loss = mean_curve(groups[cond], "final_loss")
             ax.plot(np.cumsum(loss) / np.arange(1, len(loss) + 1), color=color, linewidth=2,
-                    label=f"{cond} ({len(groups[cond])} seeds)")
+                    label=f"{cond} ({len(groups[cond])} seed{'s' if len(groups[cond]) > 1 else ''})")
     style(ax, "Permuted Shakespeare: cumulative average of final-epoch loss", "task",
           "cumulative average loss")
     ax.legend(fontsize=7.5, frameon=False, ncol=2)

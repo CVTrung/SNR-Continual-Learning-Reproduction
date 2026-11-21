@@ -84,6 +84,9 @@ def main():
     log_dir.mkdir(parents=True, exist_ok=True)
 
     def run(argv):
+        if output_path(argv).exists() or running(argv):   # re-check: another sweep may have done it
+            print("skip  " + output_path(argv).stem, flush=True)
+            return 0
         log = log_dir / (output_path(argv).stem + ".log")
         with open(log, "w") as f:
             code = subprocess.call([sys.executable, "-m", "scripts.run_experiments", *argv],

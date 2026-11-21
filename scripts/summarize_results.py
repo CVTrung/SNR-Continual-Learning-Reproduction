@@ -7,6 +7,8 @@ ignored: those runs used the superseded first implementation). Writes:
 - results/tables/eta_sweep.csv optimizer,eta,n_seeds,n_tasks,mean,std,resets_per_task,paper,estimator
 - results/tables/ps_main.csv   condition,n_seeds,n_tasks,epochs,all_mean,all_std,first_mean,
                                first_std,last_mean,last_std,paper_all,paper_first,paper_last
+- results/tables/ps_diagnostics.csv  condition, inactive units / Q, K, FFN norms / attention
+                               entropy averaged over the last 10% of tasks
 Plus a Markdown copy of each table. Metric: PM = mean online accuracy over the last 10% of
 tasks; PS = mean final-epoch loss over all tasks, the first 10% and the last 10% of tasks
 (the paper's first/last 50 of 500). std is the sample std over seeds (0 for one seed).
@@ -148,6 +150,20 @@ def main():
                        first_mean=agg(first)[0], first_std=agg(first)[1],
                        last_mean=agg(last)[0], last_std=agg(last)[1],
                        paper_all=p[0], paper_first=p[1], paper_last=p[2]))
+    diag = {}
+    for meta, df in runs:
+        if meta["benchmark"] == "ps" and meta.get("phase") == "eval":
+            n = max(1, int(round(len(df) * 0.1)))
+            tail = df.iloc[-n:]
+            diag.setdefault(ps_condition(meta), []).append(
+                {k: float(tail[k].mean()) for k in
+                 ("inactive_units", "q_norm", "k_norm", "ffn_norm", "attn_entropy")})
+    if diag:
+        rows_d = [dict(condition=c, n_seeds=len(v), **{f"{k}_last": float(np.mean([x[k] for x in v]))
+                                                       for k in v[0]}) for c, v in diag.items()]
+        d = pd.DataFrame(rows_d)
+        d["order"] = d["condition"].map(lambda c: PS_ORDER.index(c) if c in PS_ORDER else 99)
+        write(d.sort_values("order").drop(columns="order"), "ps_diagnostics")
     if ps:
         ps = pd.DataFrame(ps)
         ps["order"] = ps["condition"].map(lambda c: PS_ORDER.index(c) if c in PS_ORDER else 99)
