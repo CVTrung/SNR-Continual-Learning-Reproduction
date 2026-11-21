@@ -157,7 +157,8 @@ def plot_ps():
     ax.legend(fontsize=7.5, frameon=False, ncol=2)
     save(fig, "ps_inactive.png")
 
-    fig, axes = plt.subplots(1, 4, figsize=(12, 3.2))
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.4))
+    axes = axes.ravel()
     for ax, (col, title) in zip(axes, [("q_norm", "Query weight norm"), ("k_norm", "Key weight norm"),
                                        ("ffn_norm", "FFN weight norm"),
                                        ("attn_entropy", "Attention entropy (nats)")]):

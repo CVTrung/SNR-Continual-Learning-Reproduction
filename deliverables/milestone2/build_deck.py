@@ -153,17 +153,18 @@ def parse_eta(hp):
         return None
 
 
-def load_runs():
-    """Read every results/metrics/pm_*.csv into a list of run dicts.
+def load_runs(directory=None, n_tasks=None, min_seed=None):
+    """Read every <directory>/pm_*.csv (default: preliminary_v1) into a list of run dicts.
 
     Returns a list of dicts with keys method, hp, opt, seed, n, legacy, df. Files without a
     method token (written by an early runner) are treated as no-intervention runs and flagged
     ``legacy=True``.
     """
     runs = []
-    if not METRICS.exists():
+    directory = METRICS if directory is None else directory
+    if not directory.exists():
         return runs
-    for f in sorted(METRICS.glob("pm_*.csv")):
+    for f in sorted(directory.glob("pm_*.csv")):
         parts = f.stem.split("_")[1:]
         oi = next((i for i, p in enumerate(parts) if p in OPTS), None)
         if oi is None:
@@ -180,6 +181,8 @@ def load_runs():
         except Exception:
             continue
         if "online_accuracy" not in df:
+            continue
+        if (n_tasks is not None and (n or len(df)) != n_tasks) or (min_seed is not None and seed < min_seed):
             continue
         runs.append(dict(method=method, hp="_".join(head[1:]), opt=parts[oi], seed=seed,
                          n=n or len(df), legacy=legacy, df=df, file=f.name))
@@ -225,7 +228,7 @@ def build_pm_main(runs, use_table=True):
     f = TABLES / "pm_main.csv"
     if use_table and f.exists():
         try:
-            t = pd.read_csv(f)
+            t = pd.read_csv(f, keep_default_na=False, na_values=[""])
             out = {}  # the table replaces the superseded v1 fallback entirely (no mixing)
             for _, row in t.iterrows():
                 m, opt = norm_method(row["method"]), str(row["optimizer"]).lower()
@@ -303,7 +306,7 @@ def build_ps():
     if not f.exists():
         return {}
     try:
-        t = pd.read_csv(f)
+        t = pd.read_csv(f, keep_default_na=False, na_values=[""])
     except Exception as exc:
         print(f"warning: could not read {f}: {exc}")
         return {}
@@ -324,7 +327,7 @@ def build_ps_diag():
     f = TABLES / "ps_diagnostics.csv"
     if not f.exists():
         return {}
-    t = pd.read_csv(f)
+    t = pd.read_csv(f, keep_default_na=False, na_values=[""])
     return {str(r["condition"]): {k: r[k] for k in t.columns} for _, r in t.iterrows()}
 
 
@@ -818,6 +821,8 @@ def build():
     runs = load_runs()
     pm = build_pm_main(runs)
     pm_v1 = build_pm_main(runs, use_table=False)  # superseded first runs, for illustrations
+    # corrected reduced-protocol runs (600 tasks, seeds >= 100); preferred wherever they exist
+    pm_new = build_pm_main(load_runs(RESULTS / "metrics", n_tasks=600, min_seed=100), use_table=False)
     eta, eta_src = build_eta(runs)
     ps = build_ps()
     d = Deck()
@@ -845,8 +850,10 @@ def build():
             return None
         return sum(last_frac_mean(df["dead_fraction"]) for df in dfs) / len(dfs)
 
+    resets_new = bool(pm_new.get(("sgd", "snr")) and pm_new.get(("adam", "snr")))
+
     def resets_of(opt):
-        r = pm_v1.get((opt, "snr"), {}).get("runs") or []
+        r = (pm_new if resets_new else pm_v1).get((opt, "snr"), {}).get("runs") or []
         vals = [x["df"]["resets"].mean() for x in r if "resets" in x["df"]]
         return sum(vals) / len(vals) if vals else None
 
@@ -1612,7 +1619,8 @@ How to read the outcome. A flat curve confirms the paper's robustness claim for 
             r = pm.get((opt, m))
             p = PAPER_PM[opt][m]
             if r and r.get("mean") is not None:
-                sd = f" ± {r['std']:.3f}" if r.get("std") is not None else ""
+                sd = (f" ± {r['std']:.3f}" if r.get("std") is not None
+                      and (r.get("n_seeds") or 1) > 1 else "")
                 ours = f"{r['mean']:.3f}{sd}"
                 diff = f"{r['mean'] - p:+.3f}".replace("-", "−")
             else:
@@ -1752,10 +1760,11 @@ Each condition keeps the same colour on every chart in the deck, and the legend 
     s = d.content("Results · experiment A · dead units",
                   "Dead units: the baseline keeps losing them; SNR keeps the share low")
     f = fig("pm_dead_fraction")
-    dead_rows = [["v1, last 10% of tasks", "Dead"]]
+    dead_src = pm_new if any(pm_new.get((o, "none")) for o in OPTS) else pm_v1
+    dead_rows = [["Last 10% of tasks" + (" (v1)" if dead_src is pm_v1 else ""), "Dead"]]
     for opt in OPTS:
         for m in METHODS:
-            v = dead_last_of(opt, m, pm_v1)
+            v = dead_last_of(opt, m, dead_src)
             if v is not None:
                 dead_rows.append([f"{SHORT[m]} · {OPT_LABEL[opt]}", pct(v)])
     if f:
@@ -1776,13 +1785,13 @@ Each condition keeps the same colour on every chart in the deck, and the legend 
     if len(dead_rows) > 1:
         table(s, 6.8, 1.3, 2.7, [1.8, 0.7], dead_rows[:17], size=8.5,
               row_h=min(0.24, 3.6 / len(dead_rows[:17])))
-    dn = {(o, m): dead_last_of(o, m, pm_v1) for o in OPTS for m in METHODS}
+    dn = {(o, m): dead_last_of(o, m, dead_src) for o in OPTS for m in METHODS}
     d.finish(s, refs=[8], notes=f"""
 This slide tracks the share of dead hidden units, a unit counting as dead when it has not fired for 1000 consecutive examples. The table gives the average over the last 10% of tasks for every condition with a run.
 
 In the preliminary v1 runs (superseded, shown in the table), with no intervention the share keeps rising: with SGD it ends around {pct(dn[('sgd','none')]) if dn[('sgd','none')] is not None else '?'}, and with Adam it rises faster and ends around {pct(dn[('adam','none')]) if dn[('adam','none')] is not None else '?'}. With SNR it stays near {pct(dn[('sgd','snr')]) if dn[('sgd','snr')] is not None else '?'} (SGD) and {pct(dn[('adam','snr')]) if dn[('adam','snr')] is not None else '?'} (Adam), because units that die are reset.
 
-Two cautions. First, the diagnostic counter is not told when SNR resets a unit, so right after a reset it can still count a fresh unit as silent for a while. That can inflate SNR's dead share slightly; fixing this is on the code plan. Second, dead units do not explain everything. With Adam, L2 still leaves about {pct(dn[('adam','l2')]) if dn[('adam','l2')] is not None else '?'} of units dead, yet its accuracy ({f3(pm_v1.get(('adam','l2'),{}).get('mean'))}) is close to SNR's ({f3(pm_v1.get(('adam','snr'),{}).get('mean'))}). So a large dead share does not by itself force low accuracy, and this holds in every seed. This is one reason we treat dead units as a correlate of plasticity loss and not its single cause.
+Two cautions. First, the diagnostic counter is separate from SNR's own statistics; in the corrected code it is cleared whenever a unit is reset, so a fresh unit is never reported as dead (preliminary v1 did not do this). Second, dead units do not explain everything. With Adam, L2 still leaves about {pct(dn[('adam','l2')]) if dn[('adam','l2')] is not None else '?'} of units dead, yet its accuracy ({f3(dead_src.get(('adam','l2'),{}).get('mean'))}) is close to SNR's ({f3(dead_src.get(('adam','snr'),{}).get('mean'))}). So a large dead share does not by itself force low accuracy, and this holds in every seed. This is one reason we treat dead units as a correlate of plasticity loss and not its single cause.
 
 The dead share is recorded once at the end of each task, not averaged over the batches inside a task. {('The chart is results/figures/pm_dead_fraction.png.') if f else ('The chart is drawn from the run files: solid lines are SGD, dashed lines Adam, colours follow the method.')} Runs are on the dashboard [8].
 """)
@@ -1807,7 +1816,8 @@ The dead share is recorded once at the end of each task, not averaged over the b
             if v is None:
                 return "not run" if c in ("CBP", "ReDO") else "pending"
             sd = r.get(f"{k}_std")
-            return f"{float(v):.4f}" + (f" ± {float(sd):.4f}" if sd is not None else "")
+            many = float(r.get("n_seeds") or 1) > 1
+            return f"{float(v):.4f}" + (f" ± {float(sd):.4f}" if sd is not None and many else "")
         rows.append([c, f"{pa[0]:.4f}", f"{pa[1]:.4f}", f"{pa[2]:.4f}", ms("all"), ms("first"),
                      ms("last")])
         for ci in (4, 5, 6):
@@ -2004,8 +2014,9 @@ Our reading for the critique stage: the robustness the paper reports depends on 
     # ============================================================ 30. reset behaviour
     r_sgd, r_adam = resets_of("sgd"), resets_of("adam")
     s = d.content("Results · experiment C (team analysis)",
-                  "Reset counts: SGD vs Adam" + (" in preliminary v1" if True else ""))
-    nu = 300 if True else 200
+                  "Reset counts: SGD vs Adam" + (" in preliminary v1" if not resets_new
+                                                  else " with the corrected step-level SNR"))
+    nu = 200 if resets_new else 300
     for i, (lab, v) in enumerate([("SNR + SGD", r_sgd), ("SNR + Adam", r_adam)]):
         x = 0.7 + i * 4.5
         box(s, x, 1.4, 4.1, 2.3)
@@ -2018,8 +2029,10 @@ Our reading for the critique stage: the robustness the paper reports depends on 
     tb(s, 0.9, 4.0, 8.2, 0.85,
        ("Counted with the per-example SNR of preliminary v1, which over-resets busy units. The "
         "Adam number must be re-measured with the step-level version before we read anything "
-        "into it." if True else
-        f"Counted with the corrected step-level SNR (reduced protocol)."), size=11, anchor="m")
+        "into it." if not resets_new else
+        "Counted with the corrected step-level SNR (reduced protocol, 600 tasks, seeds 100+). "
+        "Preliminary v1, which counted per example, reset 8 (SGD) and about 321 (Adam) units "
+        "per task out of 300."), size=11, anchor="m")
     d.finish(s, refs=[8], notes=f"""
 This slide shows how many units SNR resets per task, averaged over the whole run and over seeds{', out of the 300 hidden units of the preliminary v1 MLP' if True else ''}.
 
@@ -2226,12 +2239,15 @@ The filled and hollow markers were set automatically when this deck was built, b
 """)
 
     # ============================================================ 36. A3 per-seed
-    s = d.content("Appendix A3", "Per-seed results of preliminary v1 (superseded): spread across seeds")
-    seed_set = sorted({r["seed"] for (o, m), v in pm_v1.items() for r in v.get("runs", [])})[:5]
+    seed_src = pm_new if pm_new else pm_v1
+    s = d.content("Appendix A3", ("Per-seed results, reduced protocol (600 tasks): spread across seeds"
+                                  if seed_src is pm_new else
+                                  "Per-seed results of preliminary v1 (superseded): spread across seeds"))
+    seed_set = sorted({r["seed"] for (o, m), v in seed_src.items() for r in v.get("runs", [])})[:5]
     rows = [["Condition", "Opt."] + [f"Seed {k}" for k in seed_set] + ["Mean", "Std"]]
     for opt in OPTS:
         for m in METHODS:
-            v = pm_v1.get((opt, m))
+            v = seed_src.get((opt, m))
             if not v or not v.get("runs"):
                 continue
             per = {r["seed"]: last_frac_mean(r["df"]["online_accuracy"]) for r in v["runs"]}
@@ -2247,7 +2263,7 @@ The filled and hollow markers were set automatically when this deck was built, b
     d.finish(s, refs=[8], notes=f"""
 This table lists every per-seed number behind the Permuted MNIST results: online accuracy averaged over the last 10% of tasks, one column per seed, then the mean and the sample standard deviation across seeds.
 
-It shows the superseded preliminary v1 runs (results/metrics/preliminary_v1); the reduced-protocol per-seed numbers are on the dashboard. It is computed directly from the metric files when the deck is built, using for each condition the longest set of runs available. Rows appear only for conditions that have runs.
+It shows {'the corrected reduced-protocol runs (results/metrics, 600 tasks, seeds 100 and up)' if seed_src is pm_new else 'the superseded preliminary v1 runs (results/metrics/preliminary_v1)'}. A dash means that seed was not run locally. It is computed directly from the metric files when the deck is built, using for each condition the longest set of runs available. Rows appear only for conditions that have runs.
 
 In the preliminary runs the spread across seeds is at most about 0.003 for every condition except the Adam baseline, whose standard deviation is about 0.010. That baseline is also the condition furthest from the paper, so both its level and its stability deserve a closer look when the architecture is verified.
 
