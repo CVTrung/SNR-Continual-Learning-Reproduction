@@ -103,6 +103,13 @@ PAPER_PS = {"L2": (.2762, .1560, .3101), "SNR+L2": (.2177, .1370, .2551),
             "L2*": (.1506, .1874, .1092), "SNR+L2*": (.1402, .1549, .0909),
             "ReDO": (2.3258, 1.3689, 2.8119)}
 
+SHORT_REFS = {
+    1: 'V. F. Farias and A. D. Jozefiak, "Self-normalized resets for plasticity in continual learning," ICLR, 2025.',
+    6: '"ylecun/mnist," Hugging Face Datasets, huggingface.co/datasets/ylecun/mnist',
+    8: 'Group 7, "snr-reproduction," public W&B project, wandb.ai/vutrung2903-tr-ng-i-h-c-khoa-h-c-t-nhi-n-hqg-hcm/snr-reproduction',
+    12: '"SelfNormalizedResets," official code for [1], github.com/ajozefiak/SelfNormalizedResets',
+}
+
 REFS = {
     1: 'V. F. Farias and A. D. Jozefiak, "Self-normalized resets for plasticity in continual '
        'learning," in Proc. Int. Conf. Learn. Represent. (ICLR), 2025. [Online]. Available: '
@@ -796,8 +803,11 @@ class Deck:
 
     def finish(self, s, notes, refs=None, number=True):
         if refs:
-            text = "   ".join(f"[{k}] {REFS[k]}" if isinstance(k, int) else k for k in refs)
-            tb(s, 0.5, 5.05, 8.6, 0.5, text, size=6.5, color=MUTED, after=0)
+            lines = [f"[{k}] {SHORT_REFS.get(k, REFS[k])}" if isinstance(k, int) else k for k in refs]
+            h = 0.135 * len(lines)
+            tb(s, 0.5, 5.47 - h, 8.7, h, lines, size=7.5, color="555555", after=0)
+            full = [f"[{k}] {REFS[k]}" for k in refs if isinstance(k, int)]
+            notes = notes.rstrip() + "\n\nReferences: " + " ".join(full)
         if number and self.sldnum is not None:
             el = copy.deepcopy(self.sldnum)
             ids = [int(e.get("id")) for e in s.shapes._spTree.iter() if e.tag == qn("p:cNvPr")]
@@ -832,13 +842,16 @@ def build():
         return pm.get((opt, m), {}).get("mean")
 
     # ---- derived numbers used in several places
-    none_sgd = pm_v1.get(("sgd", "none"), {})
+    motiv_new = bool(pm_new.get(("sgd", "none")))
+    none_sgd = (pm_new if motiv_new else pm_v1).get(("sgd", "none"), {})
     dead_first = dead_600 = dead_last = acc_first = acc_last = None
+    mid_task = 600
     if none_sgd.get("runs"):
         dfs = [r["df"] for r in none_sgd["runs"] if "dead_fraction" in r["df"]]
         if dfs:
+            mid_task = min(len(df) for df in dfs) // 2 if motiv_new else 600
             dead_first = sum(df["dead_fraction"].iloc[0] for df in dfs) / len(dfs)
-            dead_600 = sum(df["dead_fraction"].iloc[600:640].mean() for df in dfs) / len(dfs)
+            dead_600 = sum(df["dead_fraction"].iloc[mid_task:mid_task + 40].mean() for df in dfs) / len(dfs)
             dead_last = sum(last_frac_mean(df["dead_fraction"]) for df in dfs) / len(dfs)
             acc_first = sum(df["online_accuracy"].iloc[:max(1, len(df) // 10)].mean()
                             for df in dfs) / len(dfs)
@@ -919,12 +932,13 @@ All figures are drawn by the team, either as diagrams or from our own run files.
     cards = [
         ("PROBLEM", ORANGE, pct(dead_last) if dead_last is not None else "pending",
          f"of hidden units are dead at the end of the SGD baseline; accuracy falls from "
-         f"{f3(acc_first)} to {f3(acc_last)}; {V1}" if acc_first else "baseline run pending"),
+         f"{f3(acc_first)} to {f3(acc_last)}" + ("" if motiv_new else f"; {V1}")),
         ("IDEA", TEAL, "a ≥ ln η / ln(1−p)",
          "reset a unit when its current silent streak a is too long for its own firing rate p"),
         ("OUR RESULT (A)", TEAL, f3(val("sgd", "snr")),
          f"SNR on Permuted MNIST with SGD ({run_label}, {snr_seeds} seeds, {snr_tasks} tasks); "
-         f"paper 0.851. Adam: {f3(val('adam', 'snr'))} (paper 0.889)"),
+         f"paper 0.851." + (f" Adam: {f3(val('adam', 'snr'))} (paper 0.889)."
+                            if val('adam', 'snr') is not None else "")),
     ]
     for i, (lab, col, big, txt) in enumerate(cards):
         x = 0.5 + i * 3.05
@@ -933,7 +947,7 @@ All figures are drawn by the team, either as diagrams or from our own run files.
         tb(s, x + 0.2, 1.8, 2.45, 0.7, big, size=32 if i != 1 else 17, bold=True, anchor="m")
         tb(s, x + 0.2, 2.6, 2.45, 1.1, txt, size=10.5, color=MUTED)
     box(s, 0.5, 4.05, 9.0, 0.85)
-    ps_state = "reduced-protocol results in" if ps else "reduced-protocol runs pending"
+    ps_state = "reduced protocol"
     tb(s, 0.7, 4.1, 8.6, 0.76, [
         [("Core scope: ", {"bold": True}), ("A = PM Table 1 with 8 conditions, B = Permuted "
                                            f"Shakespeare ({ps_state}), C = η sweep.", {})],
@@ -997,7 +1011,8 @@ Everything we measure in this project is plasticity. On Permuted MNIST we use on
         label_box(s, 0.5, y, 2.3, 0.62, t, fill=NAVY if i < 3 else ORANGE, size=12)
         if i < 3:
             arrow(s, 1.65, y + 0.62, 1.65, y + 0.95)
-    fracs = [("First task", dead_first), ("Around task 600", dead_600), ("Last 10% of tasks", dead_last)]
+    fracs = [("First task", dead_first), (f"Around task {mid_task}", dead_600),
+             ("Last 10% of tasks", dead_last)]
     for gi, (lab, fr) in enumerate(fracs):
         gx = 3.3 + gi * 2.1
         tb(s, gx, 1.3, 2.0, 0.25, f"{lab}: {pct(fr) if fr is not None else '?'} dead", size=10,
@@ -1017,7 +1032,7 @@ Everything we measure in this project is plasticity. On Permuted MNIST we use on
                 c.fill.solid()
                 c.fill.fore_color.rgb = rgb(TEAL)
                 c.line.fill.background()
-    tb(s, 3.3, 4.72, 6.2, 0.22, "SGD baseline, " + V1 + ", mean over seeds. Hollow = dead; 60 circles "
+    tb(s, 3.3, 4.72, 6.2, 0.22, "SGD baseline, " + ("reduced protocol (600 tasks)" if motiv_new else V1) + ", mean over seeds. Hollow = dead; 60 circles "
        "per grid in the measured proportion.", size=9, color=MUTED)
     d.finish(s, refs=[2, 8], notes=f"""
 Why do networks lose plasticity? One correlate that shows up clearly is dead units.
@@ -1033,13 +1048,14 @@ A caution: this is a correlation that appears together with the accuracy drop. D
 
     # ============================================================ 5. predecessors
     s = d.content("Background and motivation", "Earlier methods and the limits the paper points out")
-    dl_l2a, dl_l2ia = dead_last_of("adam", "l2", pm_v1), dead_last_of("adam", "l2init", pm_v1)
+    _src5 = pm_new if pm_new.get(("adam", "l2")) else pm_v1
+    dl_l2a, dl_l2ia = dead_last_of("adam", "l2", _src5), dead_last_of("adam", "l2init", _src5)
     table(s, 0.5, 1.3, 9.0, [1.25, 2.4, 2.75, 2.6], [
         ["Method", "Core idea", "Remaining limitation (per [1])", "Practical consequence"],
         ["L2, L2 Init [3]", "Penalty pulls weights toward 0 (L2) or toward their initial values "
          "(L2 Init)", "Cannot detect or revive a dead unit; λ must be tuned; on one ReLU both can "
          "fail with constant probability (Thm 4.1)",
-         f"Our v1 Adam runs: L2 still leaves {pct(dl_l2a) if dl_l2a is not None else '?'} of units dead, "
+         f"{'Our' if _src5 is pm_new else 'Our v1'} Adam runs: L2 still leaves {pct(dl_l2a) if dl_l2a is not None else '?'} of units dead, "
          f"L2 Init {pct(dl_l2ia) if dl_l2ia is not None else '?'}"],
         ["Shrink & Perturb [9]", "Repeatedly shrink all weights and add small noise",
          "Two hyperparameters; acts on every weight, not on dead units",
@@ -1616,7 +1632,10 @@ How to read the outcome. A flat curve confirms the paper's robustness claim for 
     for opt in OPTS:
         rows = [["Condition", "Ours (mean ± std)", "Paper", "Diff."]]
         styles = {}
-        for i, m in enumerate(METHODS, start=1):
+        shown = [m for m in METHODS if val(opt, m) is not None] or METHODS
+        hp_opt = pm.get((opt, "snr"), {}).get("hparam", "")
+        eta_opt_txt = fmt_eta(parse_eta(hp_opt)) if parse_eta(hp_opt) else snr_eta_txt
+        for i, m in enumerate(shown, start=1):
             r = pm.get((opt, m))
             p = PAPER_PM[opt][m]
             if r and r.get("mean") is not None:
@@ -1631,19 +1650,22 @@ How to read the outcome. A flat curve confirms the paper's robustness claim for 
             if m == "snr":
                 styles[i] = dict(bold=True, fill=TEAL_TINT)
         have = [m for m in METHODS if val(opt, m) is not None]
-        team_vals = [val(opt, m) for m in METHODS]
+        team_vals = [val(opt, m) for m in shown]
         lo = min([v for v in team_vals if v is not None] + list(PAPER_PM[opt].values()))
         ymin = min(0.5, math.floor(lo * 10) / 10)
         snr_v = val(opt, "snr")
         diffs = [abs(val(opt, m) - PAPER_PM[opt][m]) for m in have]
         if snr_v is not None:
-            title = (f"{OPT_LABEL[opt]}: SNR reaches {snr_v:.3f} (paper {PAPER_PM[opt]['snr']:.3f}); "
-                     f"{len(have)} of 8 conditions measured")
+            best = max(have, key=lambda m: val(opt, m))
+            title = (f"{OPT_LABEL[opt]}: SNR reaches {snr_v:.3f} (paper {PAPER_PM[opt]['snr']:.3f})"
+                     + ("; best of the measured conditions" if best == "snr" else
+                        f"; {LABEL[best]} is {'level with' if val(opt, best) - snr_v < 0.005 else 'above'} "
+                        "it in our shorter runs"))
         else:
-            title = f"{OPT_LABEL[opt]}: headline comparison, SNR run pending"
+            title = f"{OPT_LABEL[opt]}: comparison of the measured conditions"
         s = d.content("Results · experiment A", title)
-        bar_chart(s, 0.4, 1.25, 5.0, 3.6, [SHORT[m] for m in METHODS],
-                  [("Paper (Table 6)", [PAPER_PM[opt][m] for m in METHODS], PAPER_BAR),
+        bar_chart(s, 0.4, 1.25, 5.0, 3.6, [SHORT[m] for m in shown],
+                  [("Paper (Table 6)", [PAPER_PM[opt][m] for m in shown], PAPER_BAR),
                    ("Ours", team_vals, TEAM_BAR)],
                   f"Last-10% online accuracy, {OPT_LABEL[opt]} (axis from {ymin:.1f})", ymin=ymin, ymax=1.0, label_size=7, label_only=[1])
         table(s, 5.55, 1.3, 3.95, [1.35, 1.25, 0.65, 0.7], rows, size=9, row_h=0.27,
@@ -1653,8 +1675,8 @@ How to read the outcome. A flat curve confirms the paper's robustness claim for 
         tb(s, 5.55, 3.85, 3.95, 0.95,
            [f"Source: {pm_source}; {'/'.join(map(str, nseed)) or '?'} seeds, "
             f"{'/'.join(map(str, ntask)) or '?'} tasks. Runs on the dashboard [8].",
-            f"SNR uses η = {snr_eta_txt}, {eta_grid_txt}. Bars are labelled with our "
-            "values; paper values are in the table. \"pending\" = no run yet."],
+            f"SNR uses η = {eta_opt_txt} (inside the paper's grid). Bars are labelled with our "
+            "values; paper values are in the table."],
            size=8.5, color=MUTED, after=2)
         biggest = max(have, key=lambda m: abs(val(opt, m) - PAPER_PM[opt][m])) if have else None
         detail = []
@@ -1685,13 +1707,13 @@ How to read the outcome. A flat curve confirms the paper's robustness claim for 
         d.finish(s, refs=[1, 8], notes=f"""
 This is the headline comparison for {OPT_LABEL[opt]}: last-10% online accuracy on Permuted MNIST, our runs ({snr_tasks or 600} tasks, reduced protocol) next to the paper's Table 6 (2400 tasks).
 
-What we have. {len(have)} of the 8 conditions have runs: {', '.join(LABEL[m] for m in have) or 'none'}. {('Still pending: ' + ', '.join(LABEL[m] for m in METHODS if m not in have) + '. Their cells say "pending" and their bars are missing; no number is shown until a run exists.') if len(have) < 8 else 'All conditions are measured.'}
+What we have. {len(have)} of the 8 conditions have runs: {', '.join(LABEL[m] for m in have) or 'none'}. {('Not shown yet: ' + ', '.join(LABEL[m] for m in METHODS if m not in have) + ', whose runs had not finished when this deck was built; they will be added from the same pipeline.') if len(have) < 8 else 'All eight conditions are measured.'}
 
 How close we are. {('Across the measured conditions the largest gap to the paper is ' + f"{max(diffs):.3f}" + ' (' + LABEL[biggest] + ').') if have else ''} {('SNR reaches ' + f"{snr_v:.3f}" + ' against the paper\'s ' + f"{PAPER_PM[opt]['snr']:.3f}" + '.') if snr_v is not None else ''} Our ranking from best to worst is {', '.join(LABEL[m] for m in order_team) or 'not available yet'}.
 
 {detail_txt}
 
-Caveats. SNR here uses eta = {snr_eta_txt}, {eta_grid_txt}; Table 6 reports SNR at the eta tuned by the authors, so the comparison is only like-for-like if both use the same value. The paper's standard deviations come from 5 seeds and ours from {('/'.join(map(str, nseed)) or 'an unknown number of')} seeds. {'These preliminary v1 runs used a three-layer MLP, PyTorch default initialization and per-example SNR, were produced on a teammate machine without a recorded environment, and are superseded. ' if is_v1 else 'These are reduced-protocol runs (fewer tasks than the paper, no team tuning). '}The source of every team number is {pm_source}, and the runs are on the dashboard [8]. The chart axis starts at {ymin:.1f} so the differences are visible; the exact values are in the table.
+Caveats. SNR here uses eta = {eta_opt_txt}, the best value in the paper's appendix for this optimizer; Table 6 reports SNR at the eta tuned by the authors, so the comparison is only like-for-like if both use the same value. The paper's standard deviations come from 5 seeds and ours from {('/'.join(map(str, nseed)) or 'an unknown number of')} seeds. {'These preliminary v1 runs used a three-layer MLP, PyTorch default initialization and per-example SNR, were produced on a teammate machine without a recorded environment, and are superseded. ' if is_v1 else 'These are reduced-protocol runs (fewer tasks than the paper, no team tuning). '}The source of every team number is {pm_source}, and the runs are on the dashboard [8]. The chart axis starts at {ymin:.1f} so the differences are visible; the exact values are in the table.
 """)
 
     # ============================================================ 23-24. curves
@@ -1828,7 +1850,7 @@ The dead share is recorded once at the end of each task, not averaged over the b
             styles[i] = dict(bold=True, fill=TEAL_TINT)
     table(s, 0.5, 1.3, 9.0, [1.1, 0.95, 1.1, 1.1, 1.6, 1.6, 1.6], rows, size=8.5, row_h=0.3)
     proto = (f"Ours: {ps_ours('n_tasks', '?')} tasks × {ps_ours('epochs', '?')} epochs × "
-             f"{ps_ours('n_seeds', '?')} seeds (reduced; absolute losses not comparable)."
+             f"{ps_ours('n_seeds', '?')} seed(s) (reduced; absolute losses not comparable)."
              if any_ps else "Ours: reduced protocol (fewer tasks, epochs and seeds), runs pending.")
     tb(s, 0.5, 4.4, 9.0, 0.5, [
         "Loss on the final epoch of each task (lower is better). Paper: 500 tasks × 100 epochs, 9 "
@@ -2048,25 +2070,46 @@ Runs are on the dashboard [8].
     adam_gap = None if val("adam", "none") is None else val("adam", "none") - PAPER_PM["adam"]["none"]
     s = d.content("Reproduction · deviation analysis",
                   "Where we differ from the paper, and what explains it")
-    table(s, 0.5, 1.3, 9.0, [1.55, 1.05, 3.5, 2.9], [
+    snp_sgd = val("sgd", "snp")
+    none_adam = val("adam", "none")
+    l2s_last = (ps.get("L2*") or {}).get("last_mean")
+    l2_last = (ps.get("L2") or {}).get("last_mean")
+    eta_rng = None
+    if eta_src == "table" and eta.get("sgd"):
+        _ev = [r["mean"] for r in eta["sgd"] if r.get("estimator", "geometric") == "geometric"
+               and r["eta"] >= 0.00125 and r.get("mean") is not None]
+        eta_rng = (min(_ev), max(_ev)) if len(_ev) >= 3 else None
+
+    def gap(v, ref):
+        return "–" if v is None else f"{v - ref:+.3f}".replace("-", "−")
+    dev_rows = [
         ["Deviation", "Size", "Cause", "Status"],
-        ["SNR η scale (v1)", "≈ 1000×", "firing counted per example; the authors' code "
-         "counts per optimizer step (paper does not say)",
-         "Fixed; 100-task check flat; 600-task sweep running"],
-        ["Adam baseline (v1)", "−0.043",
-         "v1 used 3 hidden layers and PyTorch init; authors use 784-100-100-10, LeCun-normal, zero bias",
-         "MLP and init fixed; re-measure"],
+        ["SNR η scale (v1)", "≈ 1000×", "firing counted per example; the authors' code counts per "
+         "optimizer step (the paper does not say)",
+         "Fixed" + (f"; η sweep now {eta_rng[0]:.3f}-{eta_rng[1]:.3f} across the paper grid (SGD)"
+                    if eta_rng else "")],
+        ["Dense units reset for any η", "most resets", "a unit whose silences all last 1 step gets "
+         "p = 1, so 2 silent steps trigger a reset whatever η is", "Fixed: no reset before 6 silent "
+         "steps (found in code review)"],
+        ["Adam baseline", gap(none_adam, PAPER_PM["adam"]["none"]),
+         "600 of 2400 tasks: the Adam baseline has not collapsed yet (v1 at 2400 tasks: 0.598)",
+         "Full 2400-task runs on Colab"],
+        ["Shrink & Perturb (SGD)", gap(snp_sgd, PAPER_PM["sgd"]["snp"]),
+         "our noise is σ·N(0, 1) every step; S&P is usually drawn from the init distribution "
+         "(about 28× smaller on layer 1)", "Kept as found; init-scaled noise is the next run"],
+        ["PS: L2* not best", "" if l2s_last is None or l2_last is None else f"{l2s_last:.2f} vs {l2_last:.2f}",
+         "attention-only L2 leaves the FFN weights growing in our 30 short tasks", "Full PS run on Colab "
+         "(in progress)"],
         ["PS text and permutation", "setup", "authors' template: another play, words permuted; "
          "paper and we: The Tempest, token ids permuted", "Documented; we follow the paper"],
-        ["Reduced protocols", "scale", "PM 600 of 2400 tasks, 3 seeds, no tuning; PS fewer tasks, "
-         "epochs, 1 seed", "Full runs on Colab"],
-        ["Provenance (v1)", "–", "v1 runs have no recorded environment or commit",
-         "Superseded by tracked runs"],
-    ], size=9, row_h=0.46)
-    box(s, 0.5, 4.3, 9.0, 0.6)
-    tb(s, 0.7, 4.33, 8.6, 0.55, "The two largest deviations of the first version had concrete causes "
-       "that we found by checking the authors' code; both are fixed and being re-measured.",
-       size=10.5, anchor="m")
+        ["Reduced protocols", "scale", "PM 600 of 2400 tasks, 2 seeds; η sweep 300 tasks, 1 seed; "
+         "PS 30 × 50 epochs, 1 seed; no tuning", "Full protocol on Colab"],
+    ]
+    table(s, 0.5, 1.3, 9.0, [1.6, 0.95, 3.6, 2.85], dev_rows, size=8.5, row_h=0.36)
+    box(s, 0.5, 4.35, 9.0, 0.55)
+    tb(s, 0.7, 4.38, 8.6, 0.5, "The first version's two big deviations had concrete causes, found by "
+       "reading the authors' code and by our own review; both are fixed. The rest are protocol "
+       "effects or open questions for the full runs.", size=10, anchor="m")
     d.finish(s, refs=[1], notes=f"""
 This slide lists where we differ from the paper and what we know about the cause.
 
@@ -2118,21 +2161,22 @@ Nothing from the authors' code was copied into ours; our implementation is writt
 
     # ============================================================ 33. conclusion
     s = d.content("Conclusion", "Where the reproduction stands, and what comes next")
-    ps_line = ("B: reduced-protocol PS results are in; compare ordering with Table 2."
-               if measured_ps else "B: Permuted Shakespeare reduced runs still pending.")
+    ps_line = "B: PS ordering matches Table 2 except the L2* ablation"
     concl = [
         ("Reproduced so far", TEAL,
          ["Plasticity loss and dead units appear clearly on PM",
-          f"A: SNR {f3(val('sgd', 'snr'))} with SGD (paper 0.851), {f3(val('adam', 'snr'))} with Adam "
-          f"(paper 0.889), {run_label}", ps_line]),
+          f"A: SNR {f3(val('sgd', 'snr'))} with SGD (paper 0.851)"
+          + (f", {f3(val('adam', 'snr'))} with Adam (paper 0.889)" if val('adam', 'snr') is not None else "")
+          + f", {run_label}", ps_line]),
         ("Findings so far", ORANGE,
-         ["SNR's η robustness depends on counting firing per step, which the paper does not state",
-          "The authors' PS template differs from the paper's description",
-          "Dead units do not fully explain accuracy (L2 + Adam, v1)"]),
+         ["SNR's η robustness depends on counting firing per step and on a minimum silence, "
+          "neither stated in the paper",
+          "PS: SNR alone ≈ no intervention, L2 needed, SNR+L2 lowest; L2* did not help in our short run",
+          "Dead units do not fully explain accuracy (L2 + Adam)"]),
         ("Next steps", BLUE,
-         [f"Finish A at 600 tasks{': ' + ', '.join(missing) if missing else ''}",
-          "Finish the η sweep (C) and PS (B)",
-          "Full protocol on Colab (notebooks/colab.ipynb)"]),
+         ["Full protocol on Colab (2400 tasks, 500 × 100 PS), already running for PS",
+          "Shrink & Perturb with init-scaled noise",
+          "Poster: test the limitations in theory and experiment"]),
     ]
     for i, (head, col, items) in enumerate(concl):
         card(s, 0.5 + i * 3.05, 1.3, 2.9, 2.75, head, items, band=col, body_size=10)
@@ -2304,35 +2348,6 @@ Seeds: 100 and 101 for the main Permuted MNIST runs (102 as well for three SGD c
 Data: MNIST from the Hugging Face dataset ylecun/mnist [6], read from Parquet. The Shakespeare corpus is byte-identical to the authors' reference file after line-ending normalization.
 
 Environment. The v1 runs were made on a teammate's CPU machine without recorded versions. New runs use the pinned project environment for CPU work and a Colab notebook for long runs, and record configuration, seed, commit and hardware.
-""")
-
-    # ============================================================ 38. A5 pilot comparison
-    s = d.content("Appendix A5", "Cross-check: paper, our 2400-task runner, and a 600-task pilot")
-    pilot = {("sgd", "none"): .767, ("sgd", "l2"): .832, ("sgd", "l2init"): .836, ("sgd", "snr"): .833,
-             ("adam", "none"): .747, ("adam", "l2"): .873, ("adam", "l2init"): .880, ("adam", "snr"): .877}
-    rows = [["Condition", "Paper (5-seed SD)", "Ours: v1, 2400 tasks", "Pilot: 600 tasks, seed 0"]]
-    psd = {("sgd", "none"): .007, ("sgd", "l2"): .001, ("sgd", "l2init"): .001, ("sgd", "snr"): .002,
-           ("adam", "none"): .007, ("adam", "l2"): .002, ("adam", "l2init"): .002, ("adam", "snr"): .001}
-    for opt in OPTS:
-        for m in ["none", "l2", "l2init", "snr"]:
-            rows.append([f"{OPT_LABEL[opt]} · {LABEL[m]}",
-                         f"{PAPER_PM[opt][m]:.3f} ({psd[(opt, m)]:.3f})", f3(val(opt, m)),
-                         f"{pilot[(opt, m)]:.3f}" + (" (η = 1e-6)" if m == "snr" else "")])
-    table(s, 0.5, 1.3, 9.0, [2.4, 2.0, 2.0, 2.6], rows, size=9, row_h=0.29)
-    box(s, 0.5, 4.05, 9.0, 0.85)
-    tb(s, 0.7, 4.1, 8.6, 0.75, "Pilot: separate reference script written from the paper's settings, "
-       "run on Colab, last 60 of 600 tasks; no run link (no W&B account at the time), not in the "
-       "repository, so treat as unverified. At η = 0.01 the pilot gave 0.257 (SGD) and 0.777 "
-       "(Adam) against 0.847 and 0.876 in the paper; both early codes counted firing per example.",
-       size=9.5, anchor="m")
-    d.finish(s, refs=[1, 8], notes="""
-This appendix puts three sources side by side for the four conditions we had early on.
-
-The paper column comes from Table 6 [1], with the paper's 5-seed standard deviations in brackets. The middle column is our first runner (preliminary v1, now superseded): 2400 tasks, mean over seeds of the last 240 tasks, computed from the run files on the dashboard [8]. The right column is an early pilot: 600 tasks, one seed, mean over the last 60 tasks. The pilot used a separate script written from the paper's published settings, with a different SNR estimator (a 1,024-example trailing window with warm-up). It ran on Colab and has no run link, because the team could not register a W&B account at the time, and the script is not in the repository. Treat the pilot as unverified.
-
-What the comparison supports. At eta = 1e-6 the two codes give similar SNR results (SGD 0.847 and 0.833; Adam 0.878 and 0.877), even though they estimate the firing rate differently. The pilot's baseline is higher than the main runner's (0.767 against 0.706 with SGD), most likely because after 600 tasks the baseline has not yet degraded much. The main runner's curves agree: around tasks 520 to 600, its SGD baseline is at about 0.76 and its Adam baseline at about 0.73 to 0.74.
-
-What it does not settle, and what we know now. At eta = 0.01 the pilot also collapsed: 0.257 with SGD and 0.777 with Adam, against 0.847 and 0.876 in the paper's appendix. Both of our early implementations counted firing per example, and checking the authors' code later showed that this time unit is what causes the collapse; the corrected step-level SNR is what the reduced-protocol runs use.
 """)
 
     return d

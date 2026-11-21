@@ -75,7 +75,7 @@ def plot_pm():
     if not groups:
         return
     for opt in ("sgd", "adam"):
-        fig, ax = plt.subplots(figsize=(7.2, 4.0))
+        fig, ax = plt.subplots(figsize=(8.4, 4.0))
         for method, color in PM_COLORS.items():
             frames = groups.get((opt, method))
             if not frames:
@@ -85,7 +85,7 @@ def plot_pm():
                     label=f"{method} ({len(frames)} seed{'s' if len(frames) > 1 else ''})")
         style(ax, f"Permuted MNIST, {opt.upper()}: online accuracy per task",
               "task", "online accuracy (20-task rolling mean)")
-        ax.legend(fontsize=7.5, frameon=False, ncol=2, loc="lower left")
+        ax.legend(fontsize=7.5, frameon=False, ncol=1, loc="center left", bbox_to_anchor=(1.01, 0.5))
         save(fig, f"pm_accuracy_{opt}.png")
 
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), sharey=True)
@@ -120,6 +120,10 @@ def plot_eta():
             ax.plot(hist.eta, hist["mean"], color=PALETTE[1], linewidth=2, marker="^",
                     markersize=6, label="team, histogram estimator")
         ax.set_xscale("log")
+        ticks = sorted(set(geo.eta) | set(e for e, _ in paper))
+        ax.set_xticks(ticks)
+        ax.set_xticklabels([f"{t:g}" for t in ticks], rotation=45, ha="right")
+        ax.minorticks_off()
         style(ax, opt.upper(), "eta (log scale)", "last-10% accuracy" if opt == "sgd" else "")
     lo = min(df["mean"].min(), 0.8) - 0.02
     for ax in axes:
